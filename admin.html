@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - FBL Wuid Internal Ranking</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #c0392b 0%, #8e44ad 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .logo {
+            max-width: 200px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .back-link {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 5px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .back-link:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .admin-badge {
+            display: inline-block;
+            background: rgba(255,215,0,0.3);
+            color: #FFD700;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: white;
+            color: #8e44ad;
+            border-bottom: 3px solid #8e44ad;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: border 0.3s;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: #8e44ad;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .workout-input {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+
+        .workout-input h4 {
+            color: #8e44ad;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .input-row input, .input-row select {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .input-row label {
+            font-size: 13px;
+            color: #6c757d;
+            min-width: 100px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #8e44ad 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(142, 68, 173, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            margin-left: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            border-right: 1px solid #34495e;
+        }
+        
+        th:last-child {
+            border-right: none;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+            border-right: 1px solid #e9ecef;
+        }
+        
+        td:last-child {
+            border-right: none;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .admin-section {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .admin-section h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border: 2px solid #2196F3;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .info-box h3 {
+            color: #1976D2;
+            margin-bottom: 15px;
+        }
+
+        .info-box ul {
+            color: #455a64;
+            line-height: 1.8;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .logo {
+                max-width: 150px;
+            }
+
+            .back-link {
+                position: static;
+                display: block;
+                margin-bottom: 15px;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .content {
+                padding: 15px;
+            }
+
+            .filters {
+                flex-direction: column;
+            }
+
+            .filter-group {
+                min-width: 100%;
+            }
+
+            table {
+                font-size: 14px;
+            }
+
+            th, td {
+                padding: 10px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-link">← Back to Scores</a>
+            <img src="wuid_logo.webp" alt="Wuid Logo" class="logo">
+            <div class="admin-badge">🔒 ADMIN ACCESS</div>
+            <h1>FBL - Admin Panel</h1>
+            <p>Manage workouts and athletes</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('config')">⚙️ Workout Config</button>
+            <button class="tab" onclick="showTab('manage')">👥 Manage Athletes</button>
+            <button class="tab" onclick="showTab('export')">💾 Data Management</button>
+        </div>
+
+        <div class="content">
+            <div id="status-message" class="status-message"></div>
+            <div id="firebase-status" style="text-align: center; padding: 5px; font-size: 12px; color: #6c757d;">
+                <span id="connection-indicator">🔄 Connecting to server...</span>
+            </div>
+
+            <!-- WORKOUT CONFIG TAB -->
+            <div id="config-tab" class="tab-content">
+                <div class="form-section">
+                    <h3>Configure Workout Scoring Types</h3>
+                    <p style="color: #6c757d; margin-bottom: 20px;">Set how each workout should be scored. This affects rankings and tiebreakers.</p>
+                    
+                    <div class="form-grid">
+                        <div class="workout-input">
+                            <h4>Workout 1</h4>
+                            <div class="input-row">
+                                <label>Name:</label>
+                                <input type="text" id="config-wod1-name" placeholder="e.g., 'Fran' or 'AMRAP 1'" value="Workout 1">
+                            </div>
+                            <div class="input-row">
+                                <label>Scoring Type:</label>
+                                <select id="config-wod1-type" onchange="toggleTiebreakerField(1)">
+                                    <option value="time">For Time (lower is better)</option>
+                                    <option value="amrap">AMRAP - Reps (higher is better)</option>
+                                    <option value="weight">Max Weight (higher is better)</option>
+                                    <option value="reps">Total Reps (higher is better)</option>
+                                </select>
+                            </div>
+                            <div class="input-row" id="config-wod1-tb-row" style="display:none;">
+                                <label>Tiebreaker Rep Thresholds:</label>
+                                <input type="text" id="config-wod1-tiebreakers" placeholder="e.g., 15,63,107">
+                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
+                            </div>
+                            <div class="input-row">
+                                <label style="color: #e74c3c; font-weight: bold;">
+                                    <input type="checkbox" id="config-wod1-visible" checked style="margin-right: 5px;">
+                                    Visible to Athletes
+                                </label>
+                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 5px;">Uncheck to hide until announced</span>
+                            </div>
+                        </div>
+
+                        <div class="workout-input">
+                            <h4>Workout 2</h4>
+                            <div class="input-row">
+                                <label>Name:</label>
+                                <input type="text" id="config-wod2-name" placeholder="Workout name" value="Workout 2">
+                            </div>
+                            <div class="input-row">
+                                <label>Scoring Type:</label>
+                                <select id="config-wod2-type" onchange="toggleTiebreakerField(2)">
+                                    <option value="time">For Time (lower is better)</option>
+                                    <option value="amrap">AMRAP - Reps (higher is better)</option>
+                                    <option value="weight">Max Weight (higher is better)</option>
+                                    <option value="reps">Total Reps (higher is better)</option>
+                                </select>
+                            </div>
+                            <div class="input-row" id="config-wod2-tb-row" style="display:none;">
+                                <label>Tiebreaker Rep Thresholds:</label>
+                                <input type="text" id="config-wod2-tiebreakers" placeholder="e.g., 15,63,107">
+                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
+                            </div>
+                            <div class="input-row">
+                                <label style="color: #e74c3c; font-weight: bold;">
+                                    <input type="checkbox" id="config-wod2-visible" checked style="margin-right: 5px;">
+                                    Visible to Athletes
+                                </label>
+                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 5px;">Uncheck to hide until announced</span>
+                            </div>
+                        </div>
+
+                        <div class="workout-input">
+                            <h4>Workout 3</h4>
+                            <div class="input-row">
+                                <label>Name:</label>
+                                <input type="text" id="config-wod3-name" placeholder="Workout name" value="Workout 3">
+                            </div>
+                            <div class="input-row">
+                                <label>Scoring Type:</label>
+                                <select id="config-wod3-type" onchange="toggleTiebreakerField(3)">
+                                    <option value="time">For Time (lower is better)</option>
+                                    <option value="amrap" selected>AMRAP - Reps (higher is better)</option>
+                                    <option value="weight">Max Weight (higher is better)</option>
+                                    <option value="reps">Total Reps (higher is better)</option>
+                                </select>
+                            </div>
+                            <div class="input-row" id="config-wod3-tb-row" style="display:none;">
+                                <label>Tiebreaker Rep Thresholds:</label>
+                                <input type="text" id="config-wod3-tiebreakers" placeholder="e.g., 15,63,107">
+                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
+                            </div>
+                            <div class="input-row">
+                                <label style="color: #e74c3c; font-weight: bold;">
+                                    <input type="checkbox" id="config-wod3-visible" checked style="margin-right: 5px;">
+                                    Visible to Athletes
+                                </label>
+                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 5px;">Uncheck to hide until announced</span>
+                            </div>
+                        </div>
+
+                        <div class="workout-input">
+                            <h4>Workout 4</h4>
+                            <div class="input-row">
+                                <label>Name:</label>
+                                <input type="text" id="config-wod4-name" placeholder="Workout name" value="Workout 4">
+                            </div>
+                            <div class="input-row">
+                                <label>Scoring Type:</label>
+                                <select id="config-wod4-type" onchange="toggleTiebreakerField(4)">
+                                    <option value="time">For Time (lower is better)</option>
+                                    <option value="amrap">AMRAP - Reps (higher is better)</option>
+                                    <option value="weight">Max Weight (higher is better)</option>
+                                    <option value="reps">Total Reps (higher is better)</option>
+                                </select>
+                            </div>
+                            <div class="input-row" id="config-wod4-tb-row" style="display:none;">
+                                <label>Tiebreaker Rep Thresholds:</label>
+                                <input type="text" id="config-wod4-tiebreakers" placeholder="e.g., 15,63,107">
+                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
+                            </div>
+                            <div class="input-row">
+                                <label style="color: #e74c3c; font-weight: bold;">
+                                    <input type="checkbox" id="config-wod4-visible" checked style="margin-right: 5px;">
+                                    Visible to Athletes
+                                </label>
+                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 5px;">Uncheck to hide until announced</span>
+                            </div>
+                        </div>
+
+                        <div class="workout-input">
+                            <h4>Workout 5</h4>
+                            <div class="input-row">
+                                <label>Name:</label>
+                                <input type="text" id="config-wod5-name" placeholder="Workout name" value="Workout 5">
+                            </div>
+                            <div class="input-row">
+                                <label>Scoring Type:</label>
+                                <select id="config-wod5-type" onchange="toggleTiebreakerField(5)">
+                                    <option value="time">For Time (lower is better)</option>
+                                    <option value="amrap" selected>AMRAP - Reps (higher is better)</option>
+                                    <option value="weight">Max Weight (higher is better)</option>
+                                    <option value="reps">Total Reps (higher is better)</option>
+                                </select>
+                            </div>
+                            <div class="input-row" id="config-wod5-tb-row" style="display:none;">
+                                <label>Tiebreaker Rep Thresholds:</label>
+                                <input type="text" id="config-wod5-tiebreakers" placeholder="e.g., 15,63,107">
+                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
+                            </div>
+                            <div class="input-row">
+                                <label style="color: #e74c3c; font-weight: bold;">
+                                    <input type="checkbox" id="config-wod5-visible" checked style="margin-right: 5px;">
+                                    Visible to Athletes
+                                </label>
+                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 5px;">Uncheck to hide until announced</span>
+                            </div>
+                        </div>
+
+                        <div class="workout-input">
+                            <h4>Workout 6</h4>
+                            <div class="input-row">
+                                <label>Name:</label>
+                                <input type="text" id="config-wod6-name" placeholder="Workout name" value="Workout 6">
+                            </div>
+                            <div class="input-row">
+                                <label>Scoring Type:</label>
+                                <select id="config-wod6-type" onchange="toggleTiebreakerField(6)">
+                                    <option value="time">For Time (lower is better)</option>
+                                    <option value="amrap">AMRAP - Reps (higher is better)</option>
+                                    <option value="weight">Max Weight (higher is better)</option>
+                                    <option value="reps">Total Reps (higher is better)</option>
+                                </select>
+                            </div>
+                            <div class="input-row" id="config-wod6-tb-row" style="display:none;">
+                                <label>Tiebreaker Rep Thresholds:</label>
+                                <input type="text" id="config-wod6-tiebreakers" placeholder="e.g., 15,63,107">
+                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
+                            </div>
+                            <div class="input-row">
+                                <label style="color: #e74c3c; font-weight: bold;">
+                                    <input type="checkbox" id="config-wod6-visible" style="margin-right: 5px;">
+                                    Visible to Athletes
+                                </label>
+                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 5px;">Uncheck to hide until announced</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 25px; text-align: center;">
+                        <button class="btn btn-primary" onclick="saveWorkoutConfig()">💾 Save Configuration</button>
+                        <button class="btn btn-secondary" onclick="loadDefaultConfig()">🔄 Reset to Default</button>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <h3>📋 Scoring Type Descriptions</h3>
+                    <ul style="list-style: none; padding-left: 0;">
+                        <li style="margin-bottom: 10px;"><strong>For Time:</strong> Athletes complete a set amount of work. Faster time = better rank. If not finished in time cap, check the "Did not finish" box and enter reps completed. Athletes with DNF rank below those who finished. (e.g., "21-15-9 Thrusters & Pull-ups")</li>
+                        <li style="margin-bottom: 10px;"><strong>AMRAP - Reps:</strong> Athletes complete as many reps as possible in time cap. More reps = better rank. (e.g., "20 min AMRAP")</li>
+                        <li style="margin-bottom: 10px;"><strong>Max Weight:</strong> Athletes lift maximum weight. Higher weight = better rank. (e.g., "1RM Snatch" or "Total of Clean & Jerk")</li>
+                        <li><strong>Total Reps:</strong> Similar to AMRAP but might have specific structure. More reps = better rank.</li>
+                    </ul>
+                    
+                    <h3 style="margin-top: 25px; color: #8e44ad;">⚖️ Tiebreaker Thresholds (For Time Workouts)</h3>
+                    <p style="color: #495057; line-height: 1.6;">
+                        For "For Time" workouts where athletes don't finish, you can add <strong>tiebreaker thresholds</strong> to rank athletes with the same rep count.<br><br>
+                        <strong>How it works:</strong><br>
+                        • Enter rep counts (comma-separated) where athletes record their time (e.g., "15,63,107")<br>
+                        • Athletes with same reps are ranked by their time at these checkpoints<br>
+                        • Athletes who provide tiebreaker times rank higher than those who don't<br>
+                        • Example: If two athletes both have 110 reps, compare their time at 107 reps<br><br>
+                        <em>Perfect for workouts inspired by the CrossFit Open where tiebreakers are at specific rep counts!</em>
+                    </p>
+                    
+                    <h3 style="margin-top: 25px; color: #e74c3c;">👁️ Workout Visibility</h3>
+                    <p style="color: #495057; line-height: 1.6;">
+                        Use the <strong>"Visible to Athletes"</strong> checkbox to control when workouts appear on the main page. 
+                        This is perfect for announcing workouts one at a time (like the CrossFit Open). Hidden workouts won't appear 
+                        in the input forms or rankings, and won't count toward overall standings until you make them visible.
+                    </p>
+                </div>
+            </div>
+
+            <!-- MANAGE ATHLETES TAB -->
+            <div id="manage-tab" class="tab-content" style="display: none;">
+                <div class="form-section">
+                    <h3>Manage Athlete Scores</h3>
+                    <p style="color: #6c757d; margin-bottom: 20px;">View and delete athlete entries. Athletes can edit their own scores from the main page.</p>
+                    
+                    <div class="filters">
+                        <div class="filter-group">
+                            <label>Filter by Gender</label>
+                            <select id="manageGenderFilter" onchange="displayAthleteList()">
+                                <option value="all">All</option>
+                                <option value="M">Male (M)</option>
+                                <option value="F">Female (F)</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Filter by Team</label>
+                            <select id="manageTeamFilter" onchange="displayAthleteList()">
+                                <option value="all">All</option>
+                                <option value="team1">Team 1</option>
+                                <option value="team2">Team 2</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="athlete-list-display"></div>
+                </div>
+            </div>
+
+            <!-- DATA MANAGEMENT TAB -->
+            <div id="export-tab" class="tab-content" style="display: none;">
+                <div class="admin-section">
+                    <h3>⚙️ Admin Tools</h3>
+                    <p style="color: #856404; margin-bottom: 15px;">Export, import, and clear all competition data.</p>
+                    <button class="btn btn-primary" onclick="exportData()">📥 Export Data (JSON)</button>
+                    <button class="btn btn-secondary" onclick="importData()">📤 Import Data</button>
+                    <button class="btn btn-danger" onclick="clearAllData()" style="margin-left: 10px;">🗑️ Clear All Data</button>
+                </div>
+
+                <div class="info-box">
+                    <h3>ℹ️ Data Management Tips</h3>
+                    <ul>
+                        <li><strong>Export regularly:</strong> Create backups after each workout day</li>
+                        <li><strong>Store in cloud:</strong> Save exports to Google Drive or similar</li>
+                        <li><strong>Import:</strong> Restore from backup or merge data</li>
+                        <li><strong>Clear data:</strong> Only use when starting fresh competition</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <script>
+        // Firebase Configuration - REPLACE WITH YOUR CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyBVQUrZ7KajXAWNcppBCQkCBPBtbB_RHvw",
+            authDomain: "fbl-wuid-ranking.firebaseapp.com",
+            databaseURL: "https://fbl-wuid-ranking-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "fbl-wuid-ranking",
+            storageBucket: "fbl-wuid-ranking.firebasestorage.app",
+            messagingSenderId: "474274771613",
+            appId: "1:474274771613:web:1918358b053f6466849a74"
+        };
+        
+        // Only initialize Firebase if config has been updated (not using placeholders)
+        if (firebaseConfig.apiKey !== "YOUR_API_KEY" && firebaseConfig.projectId !== "YOUR_PROJECT_ID") {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                window.database = firebase.database();
+            } catch (error) {
+                console.warn('Firebase initialization failed:', error);
+                window.database = null;
+            }
+        } else {
+            console.log('Firebase not configured - using localStorage only');
+            window.database = null;
+        }
+    </script>
+    
+    <script src="scoring.js"></script>
+    <script>
+        // Display athlete list with delete buttons
+        function displayAthleteList() {
+            let allScores = getAllScores();
+            const genderFilter = document.getElementById('manageGenderFilter').value;
+            const teamFilter = document.getElementById('manageTeamFilter').value;
+
+            // Filter
+            if (genderFilter !== 'all') {
+                allScores = allScores.filter(s => s.gender === genderFilter);
+            }
+            if (teamFilter !== 'all') {
+                allScores = allScores.filter(s => s.team === teamFilter);
+            }
+
+            // Sort alphabetically
+            allScores.sort((a, b) => a.name.localeCompare(b.name));
+
+            let html = '<div class="table-container"><table>';
+            html += '<thead><tr>';
+            html += '<th>Athlete Name</th>';
+            html += '<th>Gender</th>';
+            html += '<th>Team</th>';
+            html += '<th>Workouts Completed</th>';
+            html += '<th>Last Updated</th>';
+            html += '<th>Actions</th>';
+            html += '</tr></thead><tbody>';
+
+            allScores.forEach((athlete, index) => {
+                const workoutsCompleted = Object.values(athlete.workouts).filter(w => w.score).length;
+                const lastUpdated = new Date(athlete.timestamp).toLocaleString();
+                
+                html += '<tr>';
+                html += `<td><strong>${athlete.name}</strong></td>`;
+                html += `<td>${athlete.gender}</td>`;
+                html += `<td>${athlete.team}</td>`;
+                html += `<td>${workoutsCompleted} / 6</td>`;
+                html += `<td style="font-size: 12px; color: #6c757d;">${lastUpdated}</td>`;
+                html += `<td><button class="btn btn-danger" onclick="deleteAthlete('${athlete.name}', '${athlete.gender}', '${athlete.team}')">🗑️ Delete</button></td>`;
+                html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+
+            if (allScores.length === 0) {
+                html = '<p style="text-align: center; color: #6c757d; padding: 40px;">No athletes found with current filters.</p>';
+            }
+
+            document.getElementById('athlete-list-display').innerHTML = html;
+        }
+
+        // Delete athlete
+        function deleteAthlete(name, gender, team) {
+            if (!confirm(`Are you sure you want to delete all scores for ${name} (${gender}, ${team})? This cannot be undone!`)) {
+                return;
+            }
+
+            let allScores = getAllScores();
+            allScores = allScores.filter(s => 
+                !(s.name === name && s.gender === gender && s.team === team)
+            );
+            
+            saveAllScores(allScores);
+            displayAthleteList();
+            showStatus(`Deleted ${name}'s scores successfully! 🗑️`);
+        }
+
+        // Show manage tab athletes on load
+        function showTab(tabName) {
+            // Update active tab
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // If called programmatically, find the right tab button
+                document.querySelectorAll('.tab').forEach(tab => {
+                    if (tab.textContent.toLowerCase().includes(tabName)) {
+                        tab.classList.add('active');
+                    }
+                });
+            }
+
+            // Show/hide content
+            document.getElementById('config-tab').style.display = tabName === 'config' ? 'block' : 'none';
+            document.getElementById('manage-tab').style.display = tabName === 'manage' ? 'block' : 'none';
+            document.getElementById('export-tab').style.display = tabName === 'export' ? 'block' : 'none';
+
+            // Load data for the tab
+            if (tabName === 'manage') {
+                displayAthleteList();
+            }
+        }
+        // Initialize Firebase and load data on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            initFirebase();
+            loadConfigIntoForm();
+            updateInputForms();
+            updateWorkoutSelector();
+            
+            // Load athlete list on page load (for immediate visibility in manage tab)
+            displayAthleteList();
+        });
+    </script>
+</body>
+</html>
