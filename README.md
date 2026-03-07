@@ -76,7 +76,6 @@ Official scoring system for the FBL Wuid internal ranking competition.
 1. **6 Workouts** - Athletes complete up to 6 workouts
 2. **Best 4 Count** - Only the best 4 workout positions are summed
 3. **Lower Score Wins** - Lower position sum = better overall rank
-4. **Top 3 Advance** - Top 3 males and 3 females per team advance to main competition
 
 ### Scoring Types
 
@@ -170,7 +169,7 @@ See main [DEPLOYMENT.md](../DEPLOYMENT.md) for hosting options:
 
 2. **Announce results:**
    - Share standings with teams
-   - Confirm top 3 males/females per team
+   - Celebrate the winners! 🎉
 
 ## 💾 Data Management
 

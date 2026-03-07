@@ -931,43 +931,6 @@ function displayOverallStandings() {
         html = '<p style="text-align: center; color: #6c757d; padding: 40px;">No scores recorded yet.</p>';
     }
 
-    // Add top 3 males and females section
-    if (teamFilter !== 'all') {
-        const males = standings.filter(s => s.gender === 'M').slice(0, 3);
-        const females = standings.filter(s => s.gender === 'F').slice(0, 3);
-
-        if (males.length > 0 || females.length > 0) {
-            html += '<div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px;">';
-            html += '<h3 style="color: #e74c3c; margin-bottom: 15px;">🏆 Advancing to Main Competition</h3>';
-            
-            if (males.length > 0) {
-                html += '<h4 style="color: #495057; margin-top: 15px;">Top 3 Males:</h4>';
-                html += '<ul style="list-style: none; padding-left: 0;">';
-                males.forEach((m, i) => {
-                    const scoreNote = m.workoutsCompleted >= 4 ? ' (best 4)' : ` (${m.workoutsCompleted} workouts)`;
-                    html += `<li style="padding: 8px; margin: 5px 0; background: white; border-radius: 5px;">
-                        ${i + 1}. <strong>${m.name}</strong> - Score: ${m.totalScore}${scoreNote}
-                    </li>`;
-                });
-                html += '</ul>';
-            }
-
-            if (females.length > 0) {
-                html += '<h4 style="color: #495057; margin-top: 15px;">Top 3 Females:</h4>';
-                html += '<ul style="list-style: none; padding-left: 0;">';
-                females.forEach((f, i) => {
-                    const scoreNote = f.workoutsCompleted >= 4 ? ' (best 4)' : ` (${f.workoutsCompleted} workouts)`;
-                    html += `<li style="padding: 8px; margin: 5px 0; background: white; border-radius: 5px;">
-                        ${i + 1}. <strong>${f.name}</strong> - Score: ${f.totalScore}${scoreNote}
-                    </li>`;
-                });
-                html += '</ul>';
-            }
-
-            html += '</div>';
-        }
-    }
-
     const displayDiv = document.getElementById('overall-standings-display');
     if (displayDiv) {
         displayDiv.innerHTML = html;
