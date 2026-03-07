@@ -284,6 +284,10 @@ function initFirebase() {
         const data = snapshot.val();
         if (data) {
             configCache = data;
+            // Update admin config form if on admin page
+            if (typeof loadConfigIntoForm === 'function') {
+                loadConfigIntoForm();
+            }
             if (typeof updateInputForms === 'function') {
                 updateInputForms();
             }
