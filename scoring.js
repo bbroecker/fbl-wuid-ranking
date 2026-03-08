@@ -866,13 +866,28 @@ function calculateOverallStandings(genderFilter, teamFilter) {
     });
 
     // Sort by:
-    // 1. Number of workouts completed (more is better)
-    // 2. Total score (lower is better)
+    // 1. Athletes with 4+ workouts rank above those with <4 workouts
+    // 2. Among athletes with 4+ workouts, sort by best 4 sum (lower is better)
+    // 3. Among athletes with <4 workouts, sort by number completed, then by sum
     athleteStandings.sort((a, b) => {
-        if (a.workoutsCompleted !== b.workoutsCompleted) {
-            return b.workoutsCompleted - a.workoutsCompleted; // More workouts completed is better
+        const aHasFour = a.workoutsCompleted >= 4;
+        const bHasFour = b.workoutsCompleted >= 4;
+        
+        // Both have 4+ workouts: sort only by best 4 sum
+        if (aHasFour && bHasFour) {
+            return a.totalScore - b.totalScore; // Lower score is better
         }
-        return a.totalScore - b.totalScore; // Lower score is better
+        
+        // One has 4+, one doesn't: prioritize the one with 4+
+        if (aHasFour !== bHasFour) {
+            return bHasFour ? 1 : -1;
+        }
+        
+        // Both have <4 workouts: sort by count first, then by sum
+        if (a.workoutsCompleted !== b.workoutsCompleted) {
+            return b.workoutsCompleted - a.workoutsCompleted;
+        }
+        return a.totalScore - b.totalScore;
     });
 
     // Assign overall positions
