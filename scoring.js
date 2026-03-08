@@ -262,8 +262,8 @@ function initFirebase() {
     if (typeof firebase === 'undefined' || !window.database) {
         console.log('Firebase not available, using localStorage only');
         if (indicator) {
-            indicator.innerHTML = '💾 Offline mode (localStorage only) - <a href="FIREBASE_SETUP.md" target="_blank">Setup Firebase</a>';
-            indicator.style.color = '#e74c3c';
+            indicator.innerHTML = 'Offline mode (localStorage only)';
+            indicator.style.color = '#666';
         }
         return;
     }
@@ -271,8 +271,8 @@ function initFirebase() {
     firebaseReady = true;
     
     if (indicator) {
-        indicator.innerHTML = '🟢 Connected - Real-time sync enabled';
-        indicator.style.color = '#27ae60';
+        indicator.innerHTML = 'Connected - Real-time sync enabled';
+        indicator.style.color = '#666';
     }
     
     // Listen for scores changes
@@ -314,11 +314,11 @@ function initFirebase() {
     window.database.ref('.info/connected').on('value', (snapshot) => {
         if (indicator) {
             if (snapshot.val() === true) {
-                indicator.innerHTML = '🟢 Connected - Real-time sync enabled';
-                indicator.style.color = '#27ae60';
+                indicator.innerHTML = 'Connected - Real-time sync enabled';
+                indicator.style.color = '#666';
             } else {
-                indicator.innerHTML = '🟡 Reconnecting...';
-                indicator.style.color = '#f39c12';
+                indicator.innerHTML = 'Reconnecting...';
+                indicator.style.color = '#666';
             }
         }
     });
