@@ -13,15 +13,15 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f5f5f5;
+            background: #1a1a1a;
             min-height: 100vh;
-            color: #1a1a1a;
+            color: #f5f5f5;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
+            background: #2a2a2a;
         }
 
         .header {
@@ -48,8 +48,8 @@
 
         .tabs {
             display: flex;
-            background: #fff;
-            border-bottom: 1px solid #e0e0e0;
+            background: #2a2a2a;
+            border-bottom: 1px solid #444;
             padding: 0 20px;
             gap: 0;
         }
@@ -61,23 +61,28 @@
             cursor: pointer;
             font-size: 14px;
             font-weight: 600;
-            color: #666;
+            color: #999;
             transition: all 0.2s;
             border-bottom: 2px solid transparent;
             text-align: left;
         }
 
         .tab:hover {
-            color: #000;
+            color: #fff;
         }
 
         .tab.active {
-            color: #000;
-            border-bottom: 2px solid #000;
+            color: #fff;
+            border-bottom: 2px solid #8e44ad;
         }
 
         .content {
             padding: 20px;
+        }
+
+        h3 {
+            color: #fff;
+            margin-bottom: 15px;
         }
 
         .filters {
@@ -96,7 +101,7 @@
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: #333;
+            color: #ccc;
             font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -106,30 +111,31 @@
         .filter-group input {
             width: 100%;
             padding: 12px;
-            border: 1px solid #ddd;
+            border: 1px solid #555;
             border-radius: 4px;
             font-size: 14px;
             transition: border 0.2s;
-            background: white;
+            background: #333;
+            color: #fff;
         }
 
         .filter-group select:focus,
         .filter-group input:focus {
             outline: none;
-            border-color: #000;
+            border-color: #8e44ad;
         }
 
         .form-section {
-            background: #fafafa;
+            background: #333;
             padding: 20px;
             border-radius: 4px;
             margin-bottom: 20px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #444;
         }
 
         .workout-section {
-            background: white;
-            border: 1px solid #e0e0e0;
+            background: #2a2a2a;
+            border: 1px solid #444;
             margin-bottom: 12px;
             border-radius: 4px;
             overflow: hidden;
@@ -137,21 +143,21 @@
 
         .workout-header {
             padding: 15px 20px;
-            background: #fafafa;
+            background: #333;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
             user-select: none;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid #444;
         }
 
         .workout-header:hover {
-            background: #f0f0f0;
+            background: #3a3a3a;
         }
 
         .workout-header h4 {
-            color: #1a1a1a;
+            color: #fff;
             font-size: 15px;
             font-weight: 600;
             margin: 0;
@@ -159,7 +165,7 @@
 
         .workout-toggle {
             font-size: 20px;
-            color: #666;
+            color: #999;
             transition: transform 0.2s;
         }
 
@@ -189,16 +195,23 @@
             flex: 1;
             min-width: 120px;
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid #555;
             border-radius: 4px;
             font-size: 14px;
+            background: #1a1a1a;
+            color: #fff;
         }
 
         .input-row label {
             font-size: 13px;
-            color: #666;
+            color: #999;
             min-width: 120px;
             font-weight: 500;
+        }
+
+        input[type="checkbox"] {
+            accent-color: #8e44ad;
+            cursor: pointer;
         }
 
         .btn {
@@ -219,7 +232,7 @@
         }
 
         .btn-primary:hover {
-            background: #333;
+            background: #8e44ad;
         }
 
         .btn-secondary {
@@ -246,14 +259,14 @@
         .table-container {
             overflow-x: auto;
             margin-top: 20px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #444;
             border-radius: 4px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
+            background: #2a2a2a;
         }
 
         th {
@@ -274,14 +287,15 @@
 
         td {
             padding: 12px 15px;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid #3a3a3a;
             font-size: 14px;
+            color: #f5f5f5;
         }
 
         td:first-child {
             font-weight: 700;
             font-size: 18px;
-            color: #000;
+            color: #fff;
         }
 
         tr:last-child td {
@@ -289,12 +303,12 @@
         }
 
         tr:hover {
-            background: #fafafa;
+            background: #333;
         }
 
-        .rank-1 { background: #fff9e6; }
-        .rank-2 { background: #f5f5f5; }
-        .rank-3 { background: #fff5f0; }
+        .rank-1 { background: #3a2f1f; }
+        .rank-2 { background: #2f2f2f; }
+        .rank-3 { background: #3a2020; }
 
         .score-badge {
             display: inline-block;
@@ -302,9 +316,9 @@
             border-radius: 3px;
             font-size: 11px;
             font-weight: 600;
-            background: #f0f0f0;
+            background: #444;
             margin-right: 5px;
-            color: #666;
+            color: #ccc;
         }
 
         .status-message {
@@ -316,27 +330,27 @@
         }
 
         .status-success {
-            background: #e8f5e9;
-            color: #2e7d32;
-            border: 1px solid #c8e6c9;
+            background: #1b5e20;
+            color: #a5d6a7;
+            border: 1px solid #2e7d32;
         }
 
         .status-error {
-            background: #ffebee;
-            color: #c62828;
-            border: 1px solid #ffcdd2;
+            background: #b71c1c;
+            color: #ef9a9a;
+            border: 1px solid #c62828;
         }
 
         .edit-mode-banner {
-            background: #fff3cd;
-            color: #856404;
+            background: #3a3000;
+            color: #ffd54f;
             padding: 12px 20px;
             border-radius: 4px;
             margin-bottom: 20px;
             text-align: center;
             font-weight: 600;
             display: none;
-            border: 1px solid #ffeaa7;
+            border: 1px solid #ffa726;
         }
 
         @media (max-width: 768px) {
@@ -395,7 +409,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="wuid_logo.webp" alt="Wuid Logo" class="logo">
+            <img src="wuid_white_onblack.avif" alt="Wuid Logo" class="logo">
             <h1>WUID FBL Leaderboard</h1>
         </div>
 
@@ -407,7 +421,7 @@
 
         <div class="content">
             <div id="status-message" class="status-message"></div>
-            <div id="firebase-status" style="text-align: center; padding: 5px; font-size: 12px; color: #6c757d;">
+            <div id="firebase-status" style="text-align: center; padding: 5px; font-size: 12px; color: #999;">
                 <span id="connection-indicator">🔄 Connecting to server...</span>
             </div>
             <div id="edit-mode-banner" class="edit-mode-banner">
