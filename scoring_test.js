@@ -816,7 +816,7 @@ function calculateOverallStandings(genderFilter, teamFilter) {
     // For each athlete, get their positions in each workout
     const athleteStandings = allScores.map(athlete => {
         const workoutData = []; // Store position or null for each workout (all 6)
-        const positions = [];
+        const positionsWithIndex = []; // Store {position, index} for visible workouts
         
         // Check all 6 workouts but only count visible ones in positions
         for (let i = 0; i < 6; i++) {
@@ -831,7 +831,7 @@ function calculateOverallStandings(genderFilter, teamFilter) {
                 workoutData.push(ranking.position);
                 if (isVisible) {
                     // Only count visible workouts in overall standings
-                    positions.push(ranking.position);
+                    positionsWithIndex.push({ position: ranking.position, index: i });
                 }
             } else {
                 workoutData.push(null); // Workout not completed
@@ -840,17 +840,18 @@ function calculateOverallStandings(genderFilter, teamFilter) {
 
         // Calculate score based on number of workouts completed
         let totalScore;
-        let best4 = [];
+        let best4Indices = []; // Track which workout indices are in best 4
         
-        if (positions.length >= 4) {
+        if (positionsWithIndex.length >= 4) {
             // 4 or more workouts: take best 4
-            const sortedPositions = positions.sort((a, b) => a - b);
-            best4 = sortedPositions.slice(0, 4);
-            totalScore = best4.reduce((sum, pos) => sum + pos, 0);
+            const sorted = positionsWithIndex.sort((a, b) => a.position - b.position);
+            const best4 = sorted.slice(0, 4);
+            best4Indices = best4.map(w => w.index);
+            totalScore = best4.reduce((sum, w) => sum + w.position, 0);
         } else {
             // Less than 4 workouts: sum all positions
-            totalScore = positions.reduce((sum, pos) => sum + pos, 0);
-            best4 = positions.sort((a, b) => a - b);
+            best4Indices = positionsWithIndex.map(w => w.index);
+            totalScore = positionsWithIndex.reduce((sum, w) => sum + w.position, 0);
         }
 
         return {
@@ -858,10 +859,9 @@ function calculateOverallStandings(genderFilter, teamFilter) {
             gender: athlete.gender,
             team: athlete.team,
             workoutData: workoutData, // Array with positions or null
-            positions: positions,
-            best4: best4,
+            best4Indices: best4Indices, // Array of workout indices (0-5) that count
             totalScore: totalScore,
-            workoutsCompleted: positions.length
+            workoutsCompleted: positionsWithIndex.length
         };
     });
 
@@ -926,9 +926,9 @@ function displayOverallStandings() {
             if (pos === null) {
                 html += '<td style="text-align: center; color: #ccc; font-weight: bold;">✗</td>';
             } else {
-                // Highlight if it's in best 4 for athletes with 4+ workouts
-                const isBest4 = athlete.workoutsCompleted >= 4 && athlete.best4.includes(pos);
-                const style = isBest4 ? 'background: #3a3a3a; font-weight: bold; color: #8e44ad;' : '';
+                // Highlight if this workout index is in best 4 for athletes with 4+ workouts
+                const isBest4 = athlete.workoutsCompleted >= 4 && athlete.best4Indices.includes(workout.originalIndex);
+                const style = isBest4 ? 'font-weight: bold; color: #8e44ad;' : '';
                 html += `<td style="text-align: center; ${style}">${pos}</td>`;
             }
         });
