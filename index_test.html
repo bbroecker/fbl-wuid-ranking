@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 TEST - FBL Wuid Ranking</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            color: #1a1a1a;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+        }
+
+        .header {
+            background: #000;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 2px solid #000;
+        }
+
+        .logo {
+            max-width: 50px;
+            height: auto;
+        }
+
+        .header h1 {
+            font-size: 1.2em;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .tabs {
+            display: flex;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 0 20px;
+            gap: 0;
+        }
+
+        .tab {
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+            text-align: left;
+        }
+
+        .tab:hover {
+            color: #000;
+        }
+
+        .tab.active {
+            color: #000;
+            border-bottom: 2px solid #000;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border 0.2s;
+            background: white;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: #000;
+        }
+
+        .form-section {
+            background: #fafafa;
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .workout-section {
+            background: white;
+            border: 1px solid #e0e0e0;
+            margin-bottom: 12px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .workout-header {
+            padding: 15px 20px;
+            background: #fafafa;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .workout-header:hover {
+            background: #f0f0f0;
+        }
+
+        .workout-header h4 {
+            color: #1a1a1a;
+            font-size: 15px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .workout-toggle {
+            font-size: 20px;
+            color: #666;
+            transition: transform 0.2s;
+        }
+
+        .workout-section.collapsed .workout-toggle {
+            transform: rotate(-90deg);
+        }
+
+        .workout-content {
+            padding: 20px;
+            display: block;
+        }
+
+        .workout-section.collapsed .workout-content {
+            display: none;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .input-row input,
+        .input-row select {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .input-row label {
+            font-size: 13px;
+            color: #666;
+            min-width: 120px;
+            font-weight: 500;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: #000;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #333;
+        }
+
+        .btn-secondary {
+            background: #666;
+            color: white;
+            margin-left: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #888;
+        }
+
+        .btn-edit {
+            background: #000;
+            color: white;
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+
+        .btn-edit:hover {
+            background: #333;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th {
+            background: #000;
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-right: 1px solid #333;
+        }
+        
+        th:last-child {
+            border-right: none;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+
+        td:first-child {
+            font-weight: 700;
+            font-size: 18px;
+            color: #000;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background: #fafafa;
+        }
+
+        .rank-1 { background: #fff9e6; }
+        .rank-2 { background: #f5f5f5; }
+        .rank-3 { background: #fff5f0; }
+
+        .score-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #f0f0f0;
+            margin-right: 5px;
+            color: #666;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+
+        .status-error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+
+        .edit-mode-banner {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+            border: 1px solid #ffeaa7;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 10px 15px;
+            }
+
+            .header h1 {
+                font-size: 1em;
+            }
+
+            .logo {
+                max-width: 40px;
+            }
+
+            .tabs {
+                padding: 0 10px;
+                gap: 0;
+            }
+
+            .tab {
+                padding: 12px 10px;
+                font-size: 12px;
+            }
+
+            .content {
+                padding: 15px;
+            }
+
+            .filters {
+                flex-direction: column;
+            }
+
+            .filter-group {
+                min-width: 100%;
+            }
+
+            table {
+                font-size: 12px;
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            th, td {
+                padding: 10px 8px;
+                font-size: 11px;
+            }
+
+            td:first-child {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="wuid_logo.webp" alt="Wuid Logo" class="logo">
+            <h1>WUID FBL Leaderboard</h1>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('input')">Input Scores</button>
+            <button class="tab" onclick="showTab('workout')">Workout Rankings</button>
+            <button class="tab" onclick="showTab('overall')">Overall Standings</button>
+        </div>
+
+        <div class="content">
+            <div id="status-message" class="status-message"></div>
+            <div id="firebase-status" style="text-align: center; padding: 5px; font-size: 12px; color: #6c757d;">
+                <span id="connection-indicator">🔄 Connecting to server...</span>
+            </div>
+            <div id="edit-mode-banner" class="edit-mode-banner">
+                ✏️ Editing mode - Update your scores and click "Save Scores" to save changes
+            </div>
+
+            <!-- INPUT SCORES TAB -->
+            <div id="input-tab" class="tab-content">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Athlete Name</label>
+                        <input type="text" id="athleteName" placeholder="Enter your name" onchange="checkExistingAthlete()">
+                    </div>
+                    <div class="filter-group">
+                        <label>Gender</label>
+                        <select id="athleteGender">
+                            <option value="M">Male (M)</option>
+                            <option value="F">Female (F)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Team</label>
+                        <select id="athleteTeam">
+                            <option value="team1">Team 1</option>
+                            <option value="team2">Team 2</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Enter Workout Scores</h3>
+                    <div class="form-grid" id="workout-forms">
+                        <!-- Populated dynamically -->
+                    </div>
+
+                    <div style="margin-top: 25px; text-align: center;">
+                        <button class="btn btn-primary" onclick="saveScores()">Save Scores</button>
+                        <button class="btn btn-secondary" onclick="clearForm()">Clear Form</button>
+                        <button class="btn btn-edit" id="edit-mode-btn" onclick="enableEditMode()" style="display: none;">Edit My Scores</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WORKOUT RANKINGS TAB -->
+            <div id="workout-tab" class="tab-content" style="display: none;">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Filter by Gender</label>
+                        <select id="workoutGenderFilter" onchange="displayWorkoutRankings()">
+                            <option value="all">All</option>
+                            <option value="M">Male (M)</option>
+                            <option value="F">Female (F)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Filter by Team</label>
+                        <select id="workoutTeamFilter" onchange="displayWorkoutRankings()">
+                            <option value="all">All</option>
+                            <option value="team1">Team 1</option>
+                            <option value="team2">Team 2</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Select Workout</label>
+                        <select id="workoutSelector" onchange="displayWorkoutRankings()">
+                            <!-- Options populated dynamically from config -->
+                        </select>
+                    </div>
+                </div>
+
+                <div id="workout-rankings-display"></div>
+            </div>
+
+            <!-- OVERALL STANDINGS TAB -->
+            <div id="overall-tab" class="tab-content" style="display: none;">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Filter by Gender</label>
+                        <select id="overallGenderFilter" onchange="displayOverallStandings()">
+                            <option value="all">All</option>
+                            <option value="M">Male (M)</option>
+                            <option value="F">Female (F)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Filter by Team</label>
+                        <select id="overallTeamFilter" onchange="displayOverallStandings()">
+                            <option value="all">All</option>
+                            <option value="team1">Team 1</option>
+                            <option value="team2">Team 2</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="overall-standings-display"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <script>
+        // Firebase Configuration - NOTE: This is public and safe to commit
+        const firebaseConfig = {
+        apiKey: "AIzaSyBVQUrZ7KajXAWNcppBCQkCBPBtbB_RHvw",
+        authDomain: "fbl-wuid-ranking.firebaseapp.com",
+        databaseURL: "https://fbl-wuid-ranking-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "fbl-wuid-ranking",
+        storageBucket: "fbl-wuid-ranking.firebasestorage.app",
+        messagingSenderId: "474274771613",
+        appId: "1:474274771613:web:1918358b053f6466849a74"
+        };
+        // Only initialize Firebase if config has been updated (not using placeholders)
+        if (firebaseConfig.apiKey !== "YOUR_API_KEY" && firebaseConfig.projectId !== "YOUR_PROJECT_ID") {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                window.database = firebase.database();
+            } catch (error) {
+                console.warn('Firebase initialization failed:', error);
+                window.database = null;
+            }
+        } else {
+            console.log('Firebase not configured - using localStorage only');
+            window.database = null;
+        }
+    </script>
+    
+    <script src="scoring_test.js"></script>
+    <script>
+        // Track the original athlete identity when editing (to handle name/team/gender changes)
+        let editingOriginalIdentity = null;
+        
+        // Check if athlete already exists and load their data
+        function checkExistingAthlete() {
+            const name = document.getElementById('athleteName').value.trim();
+            const gender = document.getElementById('athleteGender').value;
+            const team = document.getElementById('athleteTeam').value;
+
+            if (!name) {
+                // Clear editing state if name is empty
+                editingOriginalIdentity = null;
+                return;
+            }
+
+            const allScores = getAllScores();
+            
+            // If we're already editing someone
+            if (editingOriginalIdentity) {
+                // Check if name has changed
+                if (name.toLowerCase() !== editingOriginalIdentity.name.toLowerCase()) {
+                    // Name changed - look for this new athlete (by name only, then load their team/gender)
+                    const existing = allScores.find(s => 
+                        s.name.toLowerCase() === name.toLowerCase()
+                    );
+                    
+                    if (existing) {
+                        // Found different athlete - load them
+                        // First update the form fields to match their data
+                        document.getElementById('athleteGender').value = existing.gender;
+                        document.getElementById('athleteTeam').value = existing.team;
+                        enableEditMode();
+                    } else {
+                        // New athlete - switch to create mode
+                        clearWorkoutInputs(true); // Clear edit state
+                    }
+                } else {
+                    // Name is the same - stay in edit mode for this athlete
+                    // (gender/team may have changed in the form, but we're still editing the same person)
+                    showStatus('✏️ Editing: ' + name + ' (' + gender + ', ' + team + ') - Update and save when ready', false);
+                }
+            } else {
+                // Not currently editing - look for athlete by name only
+                const existing = allScores.find(s => 
+                    s.name.toLowerCase() === name.toLowerCase()
+                );
+
+                if (existing) {
+                    // Found athlete - load their data (including their actual team/gender)
+                    document.getElementById('athleteGender').value = existing.gender;
+                    document.getElementById('athleteTeam').value = existing.team;
+                    showStatus('✏️ Found existing athlete: ' + existing.name + ' - Loading scores...', false);
+                    enableEditMode();
+                } else {
+                    // No match - clear workout inputs for new athlete
+                    clearWorkoutInputs(true); // Clear edit state for new athlete
+                }
+            }
+        }
+        
+        // Helper function to clear only workout inputs
+        function clearWorkoutInputs(clearEditState = false) {
+            document.getElementById('edit-mode-btn').style.display = 'none';
+            document.getElementById('edit-mode-banner').style.display = 'none';
+            
+            // Clear workout inputs only (keep name/gender/team)
+            document.querySelectorAll('input[type="text"], input[type="number"]').forEach(input => {
+                if (input.id !== 'athleteName' && input.id !== 'athleteGender' && input.id !== 'athleteTeam') {
+                    input.value = '';
+                }
+            });
+            
+            // Reset time cap checkboxes
+            for (let i = 1; i <= 6; i++) {
+                const checkbox = document.getElementById(`wod${i}-tc-not-finished`);
+                if (checkbox) {
+                    checkbox.checked = false;
+                    toggleTimeCap(i);
+                }
+            }
+            
+            // Optionally clear editing state
+            if (clearEditState) {
+                editingOriginalIdentity = null;
+            }
+        }
+
+        // Enable edit mode - load existing scores
+        function enableEditMode() {
+            const name = document.getElementById('athleteName').value.trim();
+            const gender = document.getElementById('athleteGender').value;
+            const team = document.getElementById('athleteTeam').value;
+
+            const allScores = getAllScores();
+            const existing = allScores.find(s => 
+                s.name.toLowerCase() === name.toLowerCase() && 
+                s.gender === gender && 
+                s.team === team
+            );
+
+            if (existing) {
+                // First, clear all workout inputs to avoid showing previous athlete's data
+                clearWorkoutInputs();
+                
+                // Store original identity for updating later (even if name/team/gender changes)
+                editingOriginalIdentity = {
+                    name: existing.name,
+                    gender: existing.gender,
+                    team: existing.team
+                };
+                
+                // Load scores into form
+                const config = getWorkoutConfig();
+                for (let i = 1; i <= 6; i++) {
+                    const wod = existing.workouts[`wod${i}`];
+                    const wodConfig = config[i-1];
+                    
+                    // Skip if workout data doesn't exist or is empty
+                    if (!wod || !wod.score) continue;
+                    
+                    if (wodConfig.type === 'time') {
+                        const tcCheckbox = document.getElementById(`wod${i}-tc-not-finished`);
+                        const scoreInput = document.getElementById(`wod${i}-score`);
+                        const repsInput = document.getElementById(`wod${i}-reps`);
+                        
+                        if (wod.tcNotFinished) {
+                            // Load reps
+                            if (tcCheckbox) tcCheckbox.checked = true;
+                            if (repsInput) repsInput.value = wod.score || '';
+                            toggleTimeCap(i); // Show reps input
+                            
+                            // Load tiebreakers after a brief delay to ensure DOM is ready
+                            setTimeout(() => {
+                                if (wod.tiebreakers && wodConfig.tiebreakers) {
+                                    wodConfig.tiebreakers.forEach(tb => {
+                                        const tbInput = document.getElementById(`wod${i}-tb-${tb.reps}`);
+                                        if (tbInput && wod.tiebreakers[tb.reps]) {
+                                            tbInput.value = wod.tiebreakers[tb.reps];
+                                        }
+                                    });
+                                }
+                            }, 10);
+                        } else {
+                            // Load time
+                            if (tcCheckbox) tcCheckbox.checked = false;
+                            if (scoreInput) scoreInput.value = wod.score || '';
+                            toggleTimeCap(i); // Show time input
+                        }
+                    } else {
+                        // For amrap, weight, reps
+                        const scoreInput = document.getElementById(`wod${i}-score`);
+                        if (scoreInput) scoreInput.value = wod.score || '';
+                    }
+                }
+
+                document.getElementById('edit-mode-banner').style.display = 'block';
+                document.getElementById('edit-mode-btn').style.display = 'none';
+                showStatus('✏️ Editing: ' + existing.name + ' (' + existing.gender + ', ' + existing.team + ') - Update scores and click "Save Scores"', false);
+            }
+        }
+
+        // Add listeners to athlete selection fields
+        document.getElementById('athleteGender').addEventListener('change', checkExistingAthlete);
+        document.getElementById('athleteTeam').addEventListener('change', checkExistingAthlete);
+        
+        // Initialize Firebase and load data
+        initFirebase();
+        updateInputForms();
+        updateWorkoutSelector();
+    </script>
+</body>
+</html>
