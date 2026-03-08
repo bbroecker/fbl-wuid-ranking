@@ -139,7 +139,7 @@ function updateInputForms() {
                 <span class="workout-toggle">▼</span>
             </div>
             <div class="workout-content">
-            <p style="font-size: 12px; color: #666; margin-bottom: 15px;">${getTypeDescription(wod.type)}</p>
+            <p style="font-size: 12px; color: #999; margin-bottom: 15px;">${getTypeDescription(wod.type)}</p>
             <div class="input-row">`;
         
         if (wod.type === 'time') {
@@ -159,8 +159,8 @@ function updateInputForms() {
             
             // Add tiebreaker inputs if configured
             if (wod.tiebreakers && wod.tiebreakers.length > 0) {
-                html += `<div style="margin-top: 15px; padding: 10px; background: #fafafa; border-radius: 4px; border: 1px solid #e0e0e0;">
-                    <div style="font-size: 12px; color: #666; margin-bottom: 10px; font-weight: 500;">⏱️ Optional Tiebreakers (record time at these rep counts):</div>`;
+                html += `<div style="margin-top: 15px; padding: 10px; background: #1a1a1a; border-radius: 4px; border: 1px solid #555;">
+                    <div style="font-size: 12px; color: #999; margin-bottom: 10px; font-weight: 500;">⏱️ Optional Tiebreakers (record time at these rep counts):</div>`;
                 
                 wod.tiebreakers.forEach(tb => {
                     html += `
@@ -759,7 +759,7 @@ function displayWorkoutRankings() {
                 }
             }
             
-            html += `<td style="font-size: 13px; color: #6c757d;">${tiebreakerDisplay}</td>`;
+            html += `<td style="font-size: 13px; color: #999;">${tiebreakerDisplay}</td>`;
         }
         
         html += '</tr>';
@@ -768,7 +768,7 @@ function displayWorkoutRankings() {
     html += '</tbody></table></div>';
 
     if (rankings.length === 0) {
-        html = '<p style="text-align: center; color: #6c757d; padding: 40px;">No scores recorded yet for this workout.</p>';
+        html = '<p style="text-align: center; color: #999; padding: 40px;">No scores recorded yet for this workout.</p>';
     }
 
     const displayDiv = document.getElementById('workout-rankings-display');
@@ -928,7 +928,7 @@ function displayOverallStandings() {
             } else {
                 // Highlight if it's in best 4 for athletes with 4+ workouts
                 const isBest4 = athlete.workoutsCompleted >= 4 && athlete.best4.includes(pos);
-                const style = isBest4 ? 'background: #ffe6e6; font-weight: bold;' : '';
+                const style = isBest4 ? 'background: #3a3a3a; font-weight: bold; color: #8e44ad;' : '';
                 html += `<td style="text-align: center; ${style}">${pos}</td>`;
             }
         });
@@ -937,7 +937,7 @@ function displayOverallStandings() {
         
         // Show total score with indication of how many workouts counted
         const scoreNote = athlete.workoutsCompleted >= 4 ? ' (best 4)' : ' (all)';
-        html += `<td style="text-align: center;"><strong>${athlete.totalScore}</strong><br><span style="font-size: 11px; color: #6c757d;">${scoreNote}</span></td>`;
+        html += `<td style="text-align: center;"><strong>${athlete.totalScore}</strong><br><span style="font-size: 11px; color: #999;">${scoreNote}</span></td>`;
         
         html += '</tr>';
     });
@@ -945,7 +945,7 @@ function displayOverallStandings() {
     html += '</tbody></table></div>';
 
     if (standings.length === 0) {
-        html = '<p style="text-align: center; color: #6c757d; padding: 40px;">No scores recorded yet.</p>';
+        html = '<p style="text-align: center; color: #999; padding: 40px;">No scores recorded yet.</p>';
     }
 
     const displayDiv = document.getElementById('overall-standings-display');
@@ -1021,7 +1021,7 @@ function clearAllData() {
             // Refresh athlete list if on manage page
             const athleteListDisplay = document.getElementById('athlete-list-display');
             if (athleteListDisplay) {
-                athleteListDisplay.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 40px;">No athletes found.</p>';
+                athleteListDisplay.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">No athletes found.</p>';
             }
         }
     }
