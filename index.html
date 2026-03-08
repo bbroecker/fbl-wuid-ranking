@@ -32,6 +32,7 @@
             align-items: center;
             gap: 15px;
             border-bottom: 2px solid #000;
+            flex-wrap: wrap;
         }
 
         .logo {
@@ -44,6 +45,18 @@
             font-weight: 700;
             letter-spacing: 0.5px;
             text-transform: uppercase;
+        }
+
+        .tagline {
+            font-family: 'Arial Black', 'Arial Bold', Gadget, sans-serif;
+            font-size: 0.7em;
+            font-weight: 900;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #fff;
+            opacity: 0.8;
+            white-space: nowrap;
+            margin-left: auto;
         }
 
         .tabs {
@@ -362,6 +375,14 @@
                 font-size: 1em;
             }
 
+            .tagline {
+                font-size: 0.5em;
+                width: 100%;
+                margin-left: 0;
+                text-align: center;
+                margin-top: 5px;
+            }
+
             .logo {
                 max-width: 40px;
             }
@@ -411,6 +432,7 @@
         <div class="header">
             <img src="wuid_white_onblack.avif" alt="Wuid Logo" class="logo">
             <h1>WUID FBL Leaderboard</h1>
+            <div class="tagline">OK, BUT FIRST CROSSFIT</div>
         </div>
 
         <div class="tabs">
