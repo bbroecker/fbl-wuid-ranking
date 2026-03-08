@@ -38,11 +38,17 @@ function loadConfigIntoForm() {
         const nameElem = document.getElementById(`config-wod${wodNum}-name`);
         const typeElem = document.getElementById(`config-wod${wodNum}-type`);
         const visibleElem = document.getElementById(`config-wod${wodNum}-visible`);
+        const descElem = document.getElementById(`config-wod${wodNum}-description`);
         const tbElem = document.getElementById(`config-wod${wodNum}-tiebreakers`);
         
         if (nameElem) nameElem.value = wod.name;
         if (typeElem) typeElem.value = wod.type;
         if (visibleElem) visibleElem.checked = wod.visible !== false;
+        
+        // Load description if present
+        if (descElem) {
+            descElem.value = wod.description || '';
+        }
         
         // Load tiebreakers if present
         if (tbElem && wod.tiebreakers) {
@@ -75,6 +81,12 @@ function saveWorkoutConfig() {
             visible: document.getElementById(`config-wod${i}-visible`).checked
         };
         
+        // Add description if present
+        const descElem = document.getElementById(`config-wod${i}-description`);
+        if (descElem && descElem.value.trim()) {
+            wodConfig.description = descElem.value.trim();
+        }
+        
         // Parse tiebreakers if present (only for time workouts)
         const tbElem = document.getElementById(`config-wod${i}-tiebreakers`);
         if (tbElem && wodConfig.type === 'time' && tbElem.value.trim()) {
@@ -103,6 +115,12 @@ function loadDefaultConfig() {
             document.getElementById(`config-wod${wodNum}-name`).value = wod.name;
             document.getElementById(`config-wod${wodNum}-type`).value = wod.type;
             document.getElementById(`config-wod${wodNum}-visible`).checked = wod.visible !== false;
+            
+            // Clear description (defaults don't have descriptions)
+            const descElem = document.getElementById(`config-wod${wodNum}-description`);
+            if (descElem) {
+                descElem.value = wod.description || '';
+            }
             
             // Load default tiebreakers
             const tbElem = document.getElementById(`config-wod${wodNum}-tiebreakers`);
@@ -135,7 +153,9 @@ function updateInputForms() {
         
         html += `<div class="workout-section${isFirstWorkout ? '' : ' collapsed'}" id="workout-section-${wodNum}">
             <div class="workout-header" onclick="toggleWorkoutSection(${wodNum})">
-                <h4>${wod.name}</h4>
+                <h4>${wod.name}
+                    ${wod.description ? `<button class="info-icon-btn" onclick="event.stopPropagation(); showWorkoutDescription('${wod.name.replace(/'/g, "\\'")}', \`${wod.description.replace(/`/g, '\\`')}\`)">?</button>` : ''}
+                </h4>
                 <span class="workout-toggle">▼</span>
             </div>
             <div class="workout-content">
@@ -181,7 +201,7 @@ function updateInputForms() {
         } else if (wod.type === 'weight') {
             html += `
                 <label>Weight:</label>
-                <input type="number" id="wod${wodNum}-score" placeholder="Weight (kg/lbs)" step="0.5">`;
+                <input type="number" id="wod${wodNum}-score" placeholder="Weight (kg)" step="0.5">`;
         } else if (wod.type === 'reps') {
             html += `
                 <label>Reps:</label>
@@ -244,10 +264,42 @@ function getScorePlaceholder(type) {
     const placeholders = {
         'time': 'MM:SS or reps',
         'amrap': 'Total reps',
-        'weight': 'Weight in kg/lbs',
+        'weight': 'Weight in kg',
         'reps': 'Total reps'
     };
     return placeholders[type] || 'Score';
+}
+
+// Workout Description Modal Functions
+function showWorkoutDescription(workoutName, description) {
+    const modal = document.getElementById('description-modal');
+    const title = document.getElementById('description-modal-title');
+    const text = document.getElementById('description-modal-text');
+    
+    if (modal && title && text) {
+        title.textContent = workoutName;
+        text.textContent = description;
+        modal.classList.add('active');
+        
+        // Prevent body scroll when modal is open
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeDescriptionModal(event) {
+    const modal = document.getElementById('description-modal');
+    if (modal && (!event || event.target === modal || event.target.classList.contains('description-modal-close'))) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+// Toggle collapsible workout description in rankings
+function toggleWorkoutDescription(wodNum) {
+    const section = document.getElementById(`workout-desc-${wodNum}`);
+    if (section) {
+        section.classList.toggle('expanded');
+    }
 }
 
 // Firebase-enabled storage with localStorage fallback
@@ -709,7 +761,23 @@ function displayWorkoutRankings() {
     const showGender = genderFilter === 'all';
     const showTeam = teamFilter === 'all';
 
-    let html = '<div class="table-container"><table>';
+    let html = '';
+    
+    // Add collapsible workout description if present
+    if (wodConfig.description) {
+        const escapedDesc = wodConfig.description.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        html += `<div class="workout-description-section" id="workout-desc-${wodNumber}">
+            <div class="workout-description-header" onclick="toggleWorkoutDescription(${wodNumber})">
+                <span>WORKOUT DESCRIPTION</span>
+                <span class="workout-description-toggle">▼</span>
+            </div>
+            <div class="workout-description-content">
+                <p>${escapedDesc}</p>
+            </div>
+        </div>`;
+    }
+    
+    html += '<div class="table-container"><table>';
     html += '<thead><tr>';
     html += '<th>Rank</th>';
     html += '<th>Athlete</th>';
@@ -737,7 +805,7 @@ function displayWorkoutRankings() {
         if (athlete.type === 'time' && athlete.tcNotFinished) {
             scoreDisplay = `${athlete.score} reps (DNF)`;
         } else if (athlete.type === 'weight') {
-            scoreDisplay = `${athlete.score} kg/lbs`;
+            scoreDisplay = `${athlete.score} kg`;
         }
         html += `<td>${scoreDisplay}</td>`;
         

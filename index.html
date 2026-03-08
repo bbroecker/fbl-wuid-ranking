@@ -425,6 +425,154 @@
                 font-size: 14px;
             }
         }
+
+        /* Workout Description Modal */
+        .description-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .description-modal.active {
+            display: flex;
+        }
+
+        .description-modal-content {
+            background: #2a2a2a;
+            border-radius: 15px;
+            padding: 25px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            border: 2px solid #444;
+        }
+
+        .description-modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .description-modal-close:hover {
+            background: #444;
+            color: #fff;
+        }
+
+        .description-modal h3 {
+            color: #8e44ad;
+            margin-bottom: 15px;
+            padding-right: 30px;
+        }
+
+        .description-modal p {
+            color: #ccc;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .info-icon-btn {
+            background: none;
+            border: 2px solid #8e44ad;
+            color: #8e44ad;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 8px;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .info-icon-btn:hover {
+            background: #8e44ad;
+            color: #fff;
+        }
+
+        /* Collapsible Description in Rankings */
+        .workout-description-section {
+            background: #333;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            border: 1px solid #444;
+        }
+
+        .workout-description-header {
+            padding: 12px 15px;
+            background: #2a2a2a;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.3s;
+        }
+
+        .workout-description-header:hover {
+            background: #333;
+        }
+
+        .workout-description-header span {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .workout-description-toggle {
+            color: #8e44ad;
+            font-size: 18px;
+            transition: transform 0.3s;
+        }
+
+        .workout-description-section.expanded .workout-description-toggle {
+            transform: rotate(180deg);
+        }
+
+        .workout-description-content {
+            padding: 0 15px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .workout-description-section.expanded .workout-description-content {
+            padding: 15px;
+            max-height: 500px;
+        }
+
+        .workout-description-content p {
+            color: #ccc;
+            line-height: 1.6;
+            margin: 0;
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body>
@@ -544,12 +692,22 @@
         </div>
     </div>
 
+    <!-- Workout Description Modal -->
+    <div id="description-modal" class="description-modal" onclick="closeDescriptionModal(event)">
+        <div class="description-modal-content" onclick="event.stopPropagation()">
+            <button class="description-modal-close" onclick="closeDescriptionModal()">&times;</button>
+            <h3 id="description-modal-title">Workout Description</h3>
+            <p id="description-modal-text"></p>
+        </div>
+    </div>
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
     <script>
-        // Firebase Configuration - NOTE: This is public and safe to commit
+        // ===== FIREBASE CONFIGURATION =====
+        // ONLINE CONFIG (commented out for local testing)
         const firebaseConfig = {
         apiKey: "AIzaSyBVQUrZ7KajXAWNcppBCQkCBPBtbB_RHvw",
         authDomain: "fbl-wuid-ranking.firebaseapp.com",
@@ -559,6 +717,14 @@
         messagingSenderId: "474274771613",
         appId: "1:474274771613:web:1918358b053f6466849a74"
         };
+        
+        
+        // LOCAL CONFIG (for testing - uses localStorage only)
+        // const firebaseConfig = {
+        //     apiKey: "YOUR_API_KEY",
+        //     projectId: "YOUR_PROJECT_ID"
+        // };
+        
         // Only initialize Firebase if config has been updated (not using placeholders)
         if (firebaseConfig.apiKey !== "YOUR_API_KEY" && firebaseConfig.projectId !== "YOUR_PROJECT_ID") {
             try {
@@ -740,6 +906,13 @@
         // Add listeners to athlete selection fields
         document.getElementById('athleteGender').addEventListener('change', checkExistingAthlete);
         document.getElementById('athleteTeam').addEventListener('change', checkExistingAthlete);
+        
+        // ESC key to close modal
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeDescriptionModal();
+            }
+        });
         
         // Initialize Firebase and load data
         initFirebase();

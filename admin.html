@@ -461,6 +461,11 @@
                                 </label>
                                 <span style="display: block; font-size: 11px; color: #999; margin-top: 5px;">Uncheck to hide until announced</span>
                             </div>
+                            <div class="input-row" style="flex-direction: column; align-items: flex-start;">
+                                <label>Workout Description (Optional):</label>
+                                <textarea id="config-wod1-description" placeholder="Add movement standards, time cap, or other details..." style="width: 100%; min-height: 60px; padding: 10px; border: 2px solid #555; border-radius: 8px; font-size: 14px; background: #1a1a1a; color: #fff; font-family: inherit; resize: vertical;"></textarea>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 3px;">Description will appear in input form (info icon) and rankings (collapsible)</span>
+                            </div>
                         </div>
 
                         <div class="workout-input">
@@ -489,6 +494,11 @@
                                     Visible to Athletes
                                 </label>
                                 <span style="display: block; font-size: 11px; color: #999; margin-top: 5px;">Uncheck to hide until announced</span>
+                            </div>
+                            <div class="input-row" style="flex-direction: column; align-items: flex-start;">
+                                <label>Workout Description (Optional):</label>
+                                <textarea id="config-wod2-description" placeholder="Add movement standards, time cap, or other details..." style="width: 100%; min-height: 60px; padding: 10px; border: 2px solid #555; border-radius: 8px; font-size: 14px; background: #1a1a1a; color: #fff; font-family: inherit; resize: vertical;"></textarea>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 3px;">Description will appear in input form (info icon) and rankings (collapsible)</span>
                             </div>
                         </div>
 
@@ -519,6 +529,11 @@
                                 </label>
                                 <span style="display: block; font-size: 11px; color: #999; margin-top: 5px;">Uncheck to hide until announced</span>
                             </div>
+                            <div class="input-row" style="flex-direction: column; align-items: flex-start;">
+                                <label>Workout Description (Optional):</label>
+                                <textarea id="config-wod3-description" placeholder="Add movement standards, time cap, or other details..." style="width: 100%; min-height: 60px; padding: 10px; border: 2px solid #555; border-radius: 8px; font-size: 14px; background: #1a1a1a; color: #fff; font-family: inherit; resize: vertical;"></textarea>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 3px;">Description will appear in input form (info icon) and rankings (collapsible)</span>
+                            </div>
                         </div>
 
                         <div class="workout-input">
@@ -547,6 +562,11 @@
                                     Visible to Athletes
                                 </label>
                                 <span style="display: block; font-size: 11px; color: #999; margin-top: 5px;">Uncheck to hide until announced</span>
+                            </div>
+                            <div class="input-row" style="flex-direction: column; align-items: flex-start;">
+                                <label>Workout Description (Optional):</label>
+                                <textarea id="config-wod4-description" placeholder="Add movement standards, time cap, or other details..." style="width: 100%; min-height: 60px; padding: 10px; border: 2px solid #555; border-radius: 8px; font-size: 14px; background: #1a1a1a; color: #fff; font-family: inherit; resize: vertical;"></textarea>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 3px;">Description will appear in input form (info icon) and rankings (collapsible)</span>
                             </div>
                         </div>
 
@@ -577,6 +597,11 @@
                                 </label>
                                 <span style="display: block; font-size: 11px; color: #999; margin-top: 5px;">Uncheck to hide until announced</span>
                             </div>
+                            <div class="input-row" style="flex-direction: column; align-items: flex-start;">
+                                <label>Workout Description (Optional):</label>
+                                <textarea id="config-wod5-description" placeholder="Add movement standards, time cap, or other details..." style="width: 100%; min-height: 60px; padding: 10px; border: 2px solid #555; border-radius: 8px; font-size: 14px; background: #1a1a1a; color: #fff; font-family: inherit; resize: vertical;"></textarea>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 3px;">Description will appear in input form (info icon) and rankings (collapsible)</span>
+                            </div>
                         </div>
 
                         <div class="workout-input">
@@ -605,6 +630,11 @@
                                     Visible to Athletes
                                 </label>
                                 <span style="display: block; font-size: 11px; color: #999; margin-top: 5px;">Uncheck to hide until announced</span>
+                            </div>
+                            <div class="input-row" style="flex-direction: column; align-items: flex-start;">
+                                <label>Workout Description (Optional):</label>
+                                <textarea id="config-wod6-description" placeholder="Add movement standards, time cap, or other details..." style="width: 100%; min-height: 60px; padding: 10px; border: 2px solid #555; border-radius: 8px; font-size: 14px; background: #1a1a1a; color: #fff; font-family: inherit; resize: vertical;"></textarea>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 3px;">Description will appear in input form (info icon) and rankings (collapsible)</span>
                             </div>
                         </div>
                     </div>
@@ -705,7 +735,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
     <script>
-        // Firebase Configuration - REPLACE WITH YOUR CONFIG
+        // ===== FIREBASE CONFIGURATION =====
+        // ONLINE CONFIG (commented out for local testing)
         const firebaseConfig = {
             apiKey: "AIzaSyBVQUrZ7KajXAWNcppBCQkCBPBtbB_RHvw",
             authDomain: "fbl-wuid-ranking.firebaseapp.com",
@@ -715,6 +746,13 @@
             messagingSenderId: "474274771613",
             appId: "1:474274771613:web:1918358b053f6466849a74"
         };
+        
+        
+        // LOCAL CONFIG (for testing - uses localStorage only)
+        // const firebaseConfig = {
+        //     apiKey: "YOUR_API_KEY",
+        //     projectId: "YOUR_PROJECT_ID"
+        // };
         
         // Only initialize Firebase if config has been updated (not using placeholders)
         if (firebaseConfig.apiKey !== "YOUR_API_KEY" && firebaseConfig.projectId !== "YOUR_PROJECT_ID") {
