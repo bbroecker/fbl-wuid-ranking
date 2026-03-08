@@ -22,7 +22,7 @@
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            background: white;
+            background: #2a2a2a;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             overflow: hidden;
@@ -77,8 +77,8 @@
 
         .tabs {
             display: flex;
-            background: #f8f9fa;
-            border-bottom: 2px solid #dee2e6;
+            background: #2a2a2a;
+            border-bottom: 2px solid #444;
         }
 
         .tab {
@@ -90,18 +90,27 @@
             cursor: pointer;
             font-size: 16px;
             font-weight: 600;
-            color: #6c757d;
+            color: #999;
             transition: all 0.3s;
         }
 
+        .tab:hover {
+            color: #fff;
+        }
+
         .tab.active {
-            background: white;
-            color: #8e44ad;
+            background: #333;
+            color: #fff;
             border-bottom: 3px solid #8e44ad;
         }
 
         .content {
             padding: 30px;
+            color: #f5f5f5;
+        }
+
+        h3 {
+            color: #fff;
         }
 
         .filters {
@@ -120,17 +129,19 @@
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: #495057;
+            color: #ccc;
         }
 
         .filter-group select,
         .filter-group input {
             width: 100%;
             padding: 12px;
-            border: 2px solid #e9ecef;
+            border: 2px solid #555;
             border-radius: 10px;
             font-size: 14px;
             transition: border 0.3s;
+            background: #333;
+            color: #fff;
         }
 
         .filter-group select:focus,
@@ -140,10 +151,15 @@
         }
 
         .form-section {
-            background: #f8f9fa;
+            background: #333;
             padding: 25px;
             border-radius: 15px;
             margin-bottom: 25px;
+            border: 1px solid #444;
+        }
+
+        .form-section > p {
+            color: #999;
         }
 
         .form-grid {
@@ -153,10 +169,10 @@
         }
 
         .workout-input {
-            background: white;
+            background: #2a2a2a;
             padding: 20px;
             border-radius: 10px;
-            border: 2px solid #e9ecef;
+            border: 2px solid #444;
         }
 
         .workout-input h4 {
@@ -177,14 +193,21 @@
             flex: 1;
             min-width: 120px;
             padding: 10px;
-            border: 2px solid #e9ecef;
+            border: 2px solid #555;
             border-radius: 8px;
             font-size: 14px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        .input-row input[type="checkbox"] {
+            accent-color: #8e44ad;
+            background: transparent;
         }
 
         .input-row label {
             font-size: 13px;
-            color: #6c757d;
+            color: #999;
             min-width: 100px;
         }
 
@@ -209,7 +232,7 @@
         }
 
         .btn-secondary {
-            background: #6c757d;
+            background: #999;
             color: white;
             margin-left: 10px;
         }
@@ -237,18 +260,18 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
+            background: #2a2a2a;
         }
 
         th {
-            background: #2c3e50;
+            background: #000;
             color: white;
             padding: 15px;
             text-align: left;
             font-weight: 600;
             position: sticky;
             top: 0;
-            border-right: 1px solid #34495e;
+            border-right: 1px solid #333;
         }
         
         th:last-child {
@@ -257,8 +280,9 @@
 
         td {
             padding: 15px;
-            border-bottom: 1px solid #e9ecef;
-            border-right: 1px solid #e9ecef;
+            border-bottom: 1px solid #3a3a3a;
+            border-right: 1px solid #3a3a3a;
+            color: #f5f5f5;
         }
         
         td:last-child {
@@ -266,7 +290,7 @@
         }
 
         tr:hover {
-            background: #f8f9fa;
+            background: #333;
         }
 
         .status-message {
@@ -277,32 +301,36 @@
         }
 
         .status-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: #1b5e20;
+            color: #a5d6a7;
+            border: 1px solid #2e7d32;
         }
 
         .status-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: #b71c1c;
+            color: #ef9a9a;
+            border: 1px solid #c62828;
         }
 
         .admin-section {
-            background: #fff3cd;
-            border: 2px solid #ffc107;
+            background: #3a3000;
+            border: 2px solid #ffa726;
             border-radius: 10px;
             padding: 20px;
             margin-bottom: 20px;
         }
 
         .admin-section h3 {
-            color: #856404;
+            color: #ffd54f;
             margin-bottom: 15px;
         }
 
+        .admin-section p {
+            color: #ffd54f;
+        }
+
         .info-box {
-            background: #e7f3ff;
+            background: #1a2a3a;
             border: 2px solid #2196F3;
             border-radius: 10px;
             padding: 20px;
@@ -310,13 +338,21 @@
         }
 
         .info-box h3 {
-            color: #1976D2;
+            color: #64b5f6;
             margin-bottom: 15px;
         }
 
         .info-box ul {
-            color: #455a64;
+            color: #ccc;
             line-height: 1.8;
+        }
+
+        .info-box p {
+            color: #ccc;
+        }
+
+        .info-box em {
+            color: #999;
         }
 
         @media (max-width: 768px) {
@@ -378,7 +414,7 @@
 
         <div class="content">
             <div id="status-message" class="status-message"></div>
-            <div id="firebase-status" style="text-align: center; padding: 5px; font-size: 12px; color: #6c757d;">
+            <div id="firebase-status" style="text-align: center; padding: 5px; font-size: 12px; color: #999;">
                 <span id="connection-indicator">🔄 Connecting to server...</span>
             </div>
 
@@ -386,7 +422,7 @@
             <div id="config-tab" class="tab-content">
                 <div class="form-section">
                     <h3>Configure Workout Scoring Types</h3>
-                    <p style="color: #6c757d; margin-bottom: 20px;">Set how each workout should be scored. This affects rankings and tiebreakers.</p>
+                    <p style="color: #999; margin-bottom: 20px;">Set how each workout should be scored. This affects rankings and tiebreakers.</p>
                     
                     <div class="form-grid">
                         <div class="workout-input">
@@ -407,14 +443,14 @@
                             <div class="input-row" id="config-wod1-tb-row" style="display:none;">
                                 <label>Tiebreaker Rep Thresholds:</label>
                                 <input type="text" id="config-wod1-tiebreakers" placeholder="e.g., 15,63,107">
-                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
                             </div>
                             <div class="input-row">
                                 <label style="color: #e74c3c; font-weight: bold;">
                                     <input type="checkbox" id="config-wod1-visible" checked style="margin-right: 5px;">
                                     Visible to Athletes
                                 </label>
-                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 5px;">Uncheck to hide until announced</span>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 5px;">Uncheck to hide until announced</span>
                             </div>
                         </div>
 
@@ -436,14 +472,14 @@
                             <div class="input-row" id="config-wod2-tb-row" style="display:none;">
                                 <label>Tiebreaker Rep Thresholds:</label>
                                 <input type="text" id="config-wod2-tiebreakers" placeholder="e.g., 15,63,107">
-                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
                             </div>
                             <div class="input-row">
                                 <label style="color: #e74c3c; font-weight: bold;">
                                     <input type="checkbox" id="config-wod2-visible" checked style="margin-right: 5px;">
                                     Visible to Athletes
                                 </label>
-                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 5px;">Uncheck to hide until announced</span>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 5px;">Uncheck to hide until announced</span>
                             </div>
                         </div>
 
@@ -465,14 +501,14 @@
                             <div class="input-row" id="config-wod3-tb-row" style="display:none;">
                                 <label>Tiebreaker Rep Thresholds:</label>
                                 <input type="text" id="config-wod3-tiebreakers" placeholder="e.g., 15,63,107">
-                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
                             </div>
                             <div class="input-row">
                                 <label style="color: #e74c3c; font-weight: bold;">
                                     <input type="checkbox" id="config-wod3-visible" checked style="margin-right: 5px;">
                                     Visible to Athletes
                                 </label>
-                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 5px;">Uncheck to hide until announced</span>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 5px;">Uncheck to hide until announced</span>
                             </div>
                         </div>
 
@@ -494,14 +530,14 @@
                             <div class="input-row" id="config-wod4-tb-row" style="display:none;">
                                 <label>Tiebreaker Rep Thresholds:</label>
                                 <input type="text" id="config-wod4-tiebreakers" placeholder="e.g., 15,63,107">
-                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
                             </div>
                             <div class="input-row">
                                 <label style="color: #e74c3c; font-weight: bold;">
                                     <input type="checkbox" id="config-wod4-visible" checked style="margin-right: 5px;">
                                     Visible to Athletes
                                 </label>
-                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 5px;">Uncheck to hide until announced</span>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 5px;">Uncheck to hide until announced</span>
                             </div>
                         </div>
 
@@ -523,14 +559,14 @@
                             <div class="input-row" id="config-wod5-tb-row" style="display:none;">
                                 <label>Tiebreaker Rep Thresholds:</label>
                                 <input type="text" id="config-wod5-tiebreakers" placeholder="e.g., 15,63,107">
-                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
                             </div>
                             <div class="input-row">
                                 <label style="color: #e74c3c; font-weight: bold;">
                                     <input type="checkbox" id="config-wod5-visible" checked style="margin-right: 5px;">
                                     Visible to Athletes
                                 </label>
-                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 5px;">Uncheck to hide until announced</span>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 5px;">Uncheck to hide until announced</span>
                             </div>
                         </div>
 
@@ -552,14 +588,14 @@
                             <div class="input-row" id="config-wod6-tb-row" style="display:none;">
                                 <label>Tiebreaker Rep Thresholds:</label>
                                 <input type="text" id="config-wod6-tiebreakers" placeholder="e.g., 15,63,107">
-                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 3px;">Comma-separated rep counts where athletes record time</span>
                             </div>
                             <div class="input-row">
                                 <label style="color: #e74c3c; font-weight: bold;">
                                     <input type="checkbox" id="config-wod6-visible" style="margin-right: 5px;">
                                     Visible to Athletes
                                 </label>
-                                <span style="display: block; font-size: 11px; color: #6c757d; margin-top: 5px;">Uncheck to hide until announced</span>
+                                <span style="display: block; font-size: 11px; color: #999; margin-top: 5px;">Uncheck to hide until announced</span>
                             </div>
                         </div>
                     </div>
@@ -580,7 +616,7 @@
                     </ul>
                     
                     <h3 style="margin-top: 25px; color: #8e44ad;">⚖️ Tiebreaker Thresholds (For Time Workouts)</h3>
-                    <p style="color: #495057; line-height: 1.6;">
+                    <p style="color: #ccc; line-height: 1.6;">
                         For "For Time" workouts where athletes don't finish, you can add <strong>tiebreaker thresholds</strong> to rank athletes with the same rep count.<br><br>
                         <strong>How it works:</strong><br>
                         • Enter rep counts (comma-separated) where athletes record their time (e.g., "15,63,107")<br>
@@ -591,7 +627,7 @@
                     </p>
                     
                     <h3 style="margin-top: 25px; color: #e74c3c;">👁️ Workout Visibility</h3>
-                    <p style="color: #495057; line-height: 1.6;">
+                    <p style="color: #ccc; line-height: 1.6;">
                         Use the <strong>"Visible to Athletes"</strong> checkbox to control when workouts appear on the main page. 
                         This is perfect for announcing workouts one at a time (like the CrossFit Open). Hidden workouts won't appear 
                         in the input forms or rankings, and won't count toward overall standings until you make them visible.
@@ -603,7 +639,7 @@
             <div id="manage-tab" class="tab-content" style="display: none;">
                 <div class="form-section">
                     <h3>Manage Athlete Scores</h3>
-                    <p style="color: #6c757d; margin-bottom: 20px;">View and delete athlete entries. Athletes can edit their own scores from the main page.</p>
+                    <p style="color: #999; margin-bottom: 20px;">View and delete athlete entries. Athletes can edit their own scores from the main page.</p>
                     
                     <div class="filters">
                         <div class="filter-group">
@@ -720,7 +756,7 @@
                 html += `<td>${athlete.gender}</td>`;
                 html += `<td>${athlete.team}</td>`;
                 html += `<td>${workoutsCompleted} / 6</td>`;
-                html += `<td style="font-size: 12px; color: #6c757d;">${lastUpdated}</td>`;
+                html += `<td style="font-size: 12px; color: #999;">${lastUpdated}</td>`;
                 html += `<td><button class="btn btn-danger" onclick="deleteAthlete('${athlete.name}', '${athlete.gender}', '${athlete.team}')">🗑️ Delete</button></td>`;
                 html += '</tr>';
             });
@@ -728,7 +764,7 @@
             html += '</tbody></table></div>';
 
             if (allScores.length === 0) {
-                html = '<p style="text-align: center; color: #6c757d; padding: 40px;">No athletes found with current filters.</p>';
+                html = '<p style="text-align: center; color: #999; padding: 40px;">No athletes found with current filters.</p>';
             }
 
             document.getElementById('athlete-list-display').innerHTML = html;

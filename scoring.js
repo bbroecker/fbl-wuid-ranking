@@ -129,12 +129,17 @@ function updateInputForms() {
     if (!formGrid) return; // Not on a page with input forms
     
     let html = '';
-    visibleWorkouts.forEach((wod) => {
+    visibleWorkouts.forEach((wod, index) => {
         const wodNum = wod.originalIndex + 1;
+        const isFirstWorkout = index === 0;
         
-        html += `<div class="workout-input">
-            <h4>${wod.name}</h4>
-            <p style="font-size: 12px; color: #6c757d; margin-bottom: 10px;">${getTypeDescription(wod.type)}</p>
+        html += `<div class="workout-section${isFirstWorkout ? '' : ' collapsed'}" id="workout-section-${wodNum}">
+            <div class="workout-header" onclick="toggleWorkoutSection(${wodNum})">
+                <h4>${wod.name}</h4>
+                <span class="workout-toggle">▼</span>
+            </div>
+            <div class="workout-content">
+            <p style="font-size: 12px; color: #999; margin-bottom: 15px;">${getTypeDescription(wod.type)}</p>
             <div class="input-row">`;
         
         if (wod.type === 'time') {
@@ -154,8 +159,8 @@ function updateInputForms() {
             
             // Add tiebreaker inputs if configured
             if (wod.tiebreakers && wod.tiebreakers.length > 0) {
-                html += `<div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
-                    <div style="font-size: 12px; color: #6c757d; margin-bottom: 10px;">⏱️ Optional Tiebreakers (record time at these rep counts):</div>`;
+                html += `<div style="margin-top: 15px; padding: 10px; background: #1a1a1a; border-radius: 4px; border: 1px solid #555;">
+                    <div style="font-size: 12px; color: #999; margin-bottom: 10px; font-weight: 500;">⏱️ Optional Tiebreakers (record time at these rep counts):</div>`;
                 
                 wod.tiebreakers.forEach(tb => {
                     html += `
@@ -183,10 +188,18 @@ function updateInputForms() {
                 <input type="number" id="wod${wodNum}-score" placeholder="Total reps">`;
         }
         
-        html += `</div></div>`;
+        html += `</div></div></div>`;
     });
     
     formGrid.innerHTML = html;
+}
+
+// Toggle workout section collapse/expand
+function toggleWorkoutSection(wodNum) {
+    const section = document.getElementById(`workout-section-${wodNum}`);
+    if (section) {
+        section.classList.toggle('collapsed');
+    }
 }
 
 // Toggle between time and reps input for time cap workouts
@@ -714,7 +727,7 @@ function displayWorkoutRankings() {
     rankings.forEach(athlete => {
         const rowClass = athlete.position <= 3 ? `rank-${athlete.position}` : '';
         html += `<tr class="${rowClass}">`;
-        html += `<td><span class="position-badge">${athlete.position}</span></td>`;
+        html += `<td>${athlete.position}</td>`;
         html += `<td><strong>${athlete.name}</strong></td>`;
         if (showGender) html += `<td>${athlete.gender}</td>`;
         if (showTeam) html += `<td>${athlete.team}</td>`;
@@ -746,7 +759,7 @@ function displayWorkoutRankings() {
                 }
             }
             
-            html += `<td style="font-size: 13px; color: #6c757d;">${tiebreakerDisplay}</td>`;
+            html += `<td style="font-size: 13px; color: #999;">${tiebreakerDisplay}</td>`;
         }
         
         html += '</tr>';
@@ -755,7 +768,7 @@ function displayWorkoutRankings() {
     html += '</tbody></table></div>';
 
     if (rankings.length === 0) {
-        html = '<p style="text-align: center; color: #6c757d; padding: 40px;">No scores recorded yet for this workout.</p>';
+        html = '<p style="text-align: center; color: #999; padding: 40px;">No scores recorded yet for this workout.</p>';
     }
 
     const displayDiv = document.getElementById('workout-rankings-display');
@@ -803,7 +816,7 @@ function calculateOverallStandings(genderFilter, teamFilter) {
     // For each athlete, get their positions in each workout
     const athleteStandings = allScores.map(athlete => {
         const workoutData = []; // Store position or null for each workout (all 6)
-        const positions = [];
+        const positionsWithIndex = []; // Store {position, index} for visible workouts
         
         // Check all 6 workouts but only count visible ones in positions
         for (let i = 0; i < 6; i++) {
@@ -818,7 +831,7 @@ function calculateOverallStandings(genderFilter, teamFilter) {
                 workoutData.push(ranking.position);
                 if (isVisible) {
                     // Only count visible workouts in overall standings
-                    positions.push(ranking.position);
+                    positionsWithIndex.push({ position: ranking.position, index: i });
                 }
             } else {
                 workoutData.push(null); // Workout not completed
@@ -827,17 +840,18 @@ function calculateOverallStandings(genderFilter, teamFilter) {
 
         // Calculate score based on number of workouts completed
         let totalScore;
-        let best4 = [];
+        let best4Indices = []; // Track which workout indices are in best 4
         
-        if (positions.length >= 4) {
+        if (positionsWithIndex.length >= 4) {
             // 4 or more workouts: take best 4
-            const sortedPositions = positions.sort((a, b) => a - b);
-            best4 = sortedPositions.slice(0, 4);
-            totalScore = best4.reduce((sum, pos) => sum + pos, 0);
+            const sorted = positionsWithIndex.sort((a, b) => a.position - b.position);
+            const best4 = sorted.slice(0, 4);
+            best4Indices = best4.map(w => w.index);
+            totalScore = best4.reduce((sum, w) => sum + w.position, 0);
         } else {
             // Less than 4 workouts: sum all positions
-            totalScore = positions.reduce((sum, pos) => sum + pos, 0);
-            best4 = positions.sort((a, b) => a - b);
+            best4Indices = positionsWithIndex.map(w => w.index);
+            totalScore = positionsWithIndex.reduce((sum, w) => sum + w.position, 0);
         }
 
         return {
@@ -845,10 +859,9 @@ function calculateOverallStandings(genderFilter, teamFilter) {
             gender: athlete.gender,
             team: athlete.team,
             workoutData: workoutData, // Array with positions or null
-            positions: positions,
-            best4: best4,
+            best4Indices: best4Indices, // Array of workout indices (0-5) that count
             totalScore: totalScore,
-            workoutsCompleted: positions.length
+            workoutsCompleted: positionsWithIndex.length
         };
     });
 
@@ -902,7 +915,7 @@ function displayOverallStandings() {
     standings.forEach(athlete => {
         const rowClass = athlete.overallPosition <= 3 ? `rank-${athlete.overallPosition}` : '';
         html += `<tr class="${rowClass}">`;
-        html += `<td><span class="position-badge">${athlete.overallPosition}</span></td>`;
+        html += `<td>${athlete.overallPosition}</td>`;
         html += `<td><strong>${athlete.name}</strong></td>`;
         if (showGender) html += `<td>${athlete.gender}</td>`;
         if (showTeam) html += `<td>${athlete.team}</td>`;
@@ -913,9 +926,9 @@ function displayOverallStandings() {
             if (pos === null) {
                 html += '<td style="text-align: center; color: #ccc; font-weight: bold;">✗</td>';
             } else {
-                // Highlight if it's in best 4 for athletes with 4+ workouts
-                const isBest4 = athlete.workoutsCompleted >= 4 && athlete.best4.includes(pos);
-                const style = isBest4 ? 'background: #ffe6e6; font-weight: bold;' : '';
+                // Highlight if this workout index is in best 4 for athletes with 4+ workouts
+                const isBest4 = athlete.workoutsCompleted >= 4 && athlete.best4Indices.includes(workout.originalIndex);
+                const style = isBest4 ? 'font-weight: bold; color: #8e44ad;' : '';
                 html += `<td style="text-align: center; ${style}">${pos}</td>`;
             }
         });
@@ -924,7 +937,7 @@ function displayOverallStandings() {
         
         // Show total score with indication of how many workouts counted
         const scoreNote = athlete.workoutsCompleted >= 4 ? ' (best 4)' : ' (all)';
-        html += `<td style="text-align: center;"><strong>${athlete.totalScore}</strong><br><span style="font-size: 11px; color: #6c757d;">${scoreNote}</span></td>`;
+        html += `<td style="text-align: center;"><strong>${athlete.totalScore}</strong><br><span style="font-size: 11px; color: #999;">${scoreNote}</span></td>`;
         
         html += '</tr>';
     });
@@ -932,7 +945,7 @@ function displayOverallStandings() {
     html += '</tbody></table></div>';
 
     if (standings.length === 0) {
-        html = '<p style="text-align: center; color: #6c757d; padding: 40px;">No scores recorded yet.</p>';
+        html = '<p style="text-align: center; color: #999; padding: 40px;">No scores recorded yet.</p>';
     }
 
     const displayDiv = document.getElementById('overall-standings-display');
@@ -1008,7 +1021,7 @@ function clearAllData() {
             // Refresh athlete list if on manage page
             const athleteListDisplay = document.getElementById('athlete-list-display');
             if (athleteListDisplay) {
-                athleteListDisplay.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 40px;">No athletes found.</p>';
+                athleteListDisplay.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">No athletes found.</p>';
             }
         }
     }

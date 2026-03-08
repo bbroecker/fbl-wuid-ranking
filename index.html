@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FBL - Wuid Internal Ranking</title>
+    <title>🧪 TEST - FBL Wuid Ranking</title>
     <style>
         * {
             margin: 0;
@@ -13,67 +13,76 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            background: #1a1a1a;
             min-height: 100vh;
-            padding: 20px;
-            color: #333;
+            color: #f5f5f5;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
+            background: #2a2a2a;
         }
 
         .header {
-            background: linear-gradient(135deg, #1a1a1a 0%, #e74c3c 100%);
+            background: #000;
             color: white;
-            padding: 30px;
-            text-align: center;
-            position: relative;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 2px solid #000;
         }
 
         .logo {
-            max-width: 200px;
+            max-width: 50px;
             height: auto;
-            margin-bottom: 15px;
         }
 
         .header h1 {
-            font-size: 2em;
-            margin-bottom: 10px;
+            font-size: 1.2em;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
 
         .tabs {
             display: flex;
-            background: #f8f9fa;
-            border-bottom: 2px solid #dee2e6;
+            background: #2a2a2a;
+            border-bottom: 1px solid #444;
+            padding: 0 20px;
+            gap: 0;
         }
 
         .tab {
-            flex: 1;
-            padding: 15px;
-            text-align: center;
+            padding: 15px 20px;
             background: none;
             border: none;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
-            color: #6c757d;
-            transition: all 0.3s;
+            color: #999;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+            text-align: left;
+        }
+
+        .tab:hover {
+            color: #fff;
         }
 
         .tab.active {
-            background: white;
-            color: #e74c3c;
-            border-bottom: 3px solid #e74c3c;
+            color: #fff;
+            border-bottom: 2px solid #8e44ad;
         }
 
         .content {
-            padding: 30px;
+            padding: 20px;
+        }
+
+        h3 {
+            color: #fff;
+            margin-bottom: 15px;
         }
 
         .filters {
@@ -92,49 +101,85 @@
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: #495057;
+            color: #ccc;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .filter-group select,
         .filter-group input {
             width: 100%;
             padding: 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
+            border: 1px solid #555;
+            border-radius: 4px;
             font-size: 14px;
-            transition: border 0.3s;
+            transition: border 0.2s;
+            background: #333;
+            color: #fff;
         }
 
         .filter-group select:focus,
         .filter-group input:focus {
             outline: none;
-            border-color: #e74c3c;
+            border-color: #8e44ad;
         }
 
         .form-section {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 25px;
-        }
-
-        .form-grid {
-            display: grid;
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .workout-input {
-            background: white;
+            background: #333;
             padding: 20px;
-            border-radius: 10px;
-            border: 2px solid #e9ecef;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #444;
         }
 
-        .workout-input h4 {
-            color: #e74c3c;
-            margin-bottom: 15px;
-            font-size: 16px;
+        .workout-section {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            margin-bottom: 12px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .workout-header {
+            padding: 15px 20px;
+            background: #333;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            border-bottom: 1px solid #444;
+        }
+
+        .workout-header:hover {
+            background: #3a3a3a;
+        }
+
+        .workout-header h4 {
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .workout-toggle {
+            font-size: 20px;
+            color: #999;
+            transition: transform 0.2s;
+        }
+
+        .workout-section.collapsed .workout-toggle {
+            transform: rotate(-90deg);
+        }
+
+        .workout-content {
+            padding: 20px;
+            display: block;
+        }
+
+        .workout-section.collapsed .workout-content {
+            display: none;
         }
 
         .input-row {
@@ -142,84 +187,98 @@
             gap: 10px;
             align-items: center;
             flex-wrap: wrap;
+            margin-bottom: 12px;
         }
 
-        .input-row input {
+        .input-row input,
+        .input-row select {
             flex: 1;
             min-width: 120px;
             padding: 10px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
+            border: 1px solid #555;
+            border-radius: 4px;
             font-size: 14px;
+            background: #1a1a1a;
+            color: #fff;
         }
 
         .input-row label {
             font-size: 13px;
-            color: #6c757d;
-            min-width: 80px;
+            color: #999;
+            min-width: 120px;
+            font-weight: 500;
+        }
+
+        input[type="checkbox"] {
+            accent-color: #8e44ad;
+            cursor: pointer;
         }
 
         .btn {
-            padding: 12px 30px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 10px;
-            font-size: 16px;
+            border-radius: 4px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            background: #000;
             color: white;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+            background: #8e44ad;
         }
 
         .btn-secondary {
-            background: #6c757d;
+            background: #666;
             color: white;
             margin-left: 10px;
         }
 
         .btn-secondary:hover {
-            background: #5a6268;
+            background: #888;
         }
 
         .btn-edit {
-            background: #17a2b8;
+            background: #000;
             color: white;
-            padding: 8px 20px;
-            font-size: 14px;
+            padding: 8px 16px;
+            font-size: 13px;
         }
 
         .btn-edit:hover {
-            background: #138496;
+            background: #333;
         }
 
         .table-container {
             overflow-x: auto;
             margin-top: 20px;
+            border: 1px solid #444;
+            border-radius: 4px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
+            background: #2a2a2a;
         }
 
         th {
-            background: #2c3e50;
+            background: #000;
             color: white;
-            padding: 15px;
+            padding: 12px 15px;
             text-align: left;
             font-weight: 600;
-            position: sticky;
-            top: 0;
-            border-right: 1px solid #34495e;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-right: 1px solid #333;
         }
         
         th:last-child {
@@ -227,87 +286,94 @@
         }
 
         td {
-            padding: 15px;
-            border-bottom: 1px solid #e9ecef;
-            border-right: 1px solid #e9ecef;
+            padding: 12px 15px;
+            border-bottom: 1px solid #3a3a3a;
+            font-size: 14px;
+            color: #f5f5f5;
         }
-        
-        td:last-child {
-            border-right: none;
+
+        td:first-child {
+            font-weight: 700;
+            font-size: 18px;
+            color: #fff;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
         }
 
         tr:hover {
-            background: #f8f9fa;
+            background: #333;
         }
 
-        .rank-1 { background: #ffd70020; }
-        .rank-2 { background: #c0c0c020; }
-        .rank-3 { background: #cd7f3220; }
+        .rank-1 { background: #333; }
+        .rank-2 { background: #2f2f2f; }
+        .rank-3 { background: #2a2a2a; }
 
         .score-badge {
             display: inline-block;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
             font-weight: 600;
-            background: #e9ecef;
+            background: #444;
             margin-right: 5px;
-        }
-
-        .position-badge {
-            display: inline-block;
-            width: 30px;
-            height: 30px;
-            line-height: 30px;
-            text-align: center;
-            border-radius: 50%;
-            background: #e74c3c;
-            color: white;
-            font-weight: 600;
-            font-size: 14px;
+            color: #ccc;
         }
 
         .status-message {
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 4px;
             margin-bottom: 20px;
             display: none;
+            font-weight: 500;
         }
 
         .status-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: #1b5e20;
+            color: #a5d6a7;
+            border: 1px solid #2e7d32;
         }
 
         .status-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: #b71c1c;
+            color: #ef9a9a;
+            border: 1px solid #c62828;
         }
 
         .edit-mode-banner {
-            background: #fff3cd;
-            color: #856404;
-            padding: 15px;
-            border-radius: 10px;
+            background: #3a3000;
+            color: #ffd54f;
+            padding: 12px 20px;
+            border-radius: 4px;
             margin-bottom: 20px;
             text-align: center;
             font-weight: 600;
             display: none;
+            border: 1px solid #ffa726;
         }
 
         @media (max-width: 768px) {
+            .header {
+                padding: 10px 15px;
+            }
+
             .header h1 {
-                font-size: 1.5em;
+                font-size: 1em;
             }
 
             .logo {
-                max-width: 150px;
+                max-width: 40px;
             }
 
             .tabs {
-                flex-direction: column;
+                padding: 0 10px;
+                gap: 0;
+            }
+
+            .tab {
+                padding: 12px 10px;
+                font-size: 12px;
             }
 
             .content {
@@ -330,17 +396,12 @@
             }
 
             th, td {
-                padding: 8px 6px;
-                font-size: 12px;
-            }
-            
-            th {
+                padding: 10px 8px;
                 font-size: 11px;
             }
-            
-            .position-badge {
-                padding: 3px 6px;
-                font-size: 11px;
+
+            td:first-child {
+                font-size: 14px;
             }
         }
     </style>
@@ -348,19 +409,19 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="wuid_logo.webp" alt="Wuid Logo" class="logo">
-            <h1>FBL - Wuid Internal Ranking</h1>
+            <img src="wuid_white_onblack.avif" alt="Wuid Logo" class="logo">
+            <h1>WUID FBL Leaderboard</h1>
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="showTab('input')">📝 Input Scores</button>
-            <button class="tab" onclick="showTab('workout')">🏆 Workout Rankings</button>
-            <button class="tab" onclick="showTab('overall')">📊 Overall Standings</button>
+            <button class="tab active" onclick="showTab('input')">Input Scores</button>
+            <button class="tab" onclick="showTab('workout')">Workout Rankings</button>
+            <button class="tab" onclick="showTab('overall')">Overall Standings</button>
         </div>
 
         <div class="content">
             <div id="status-message" class="status-message"></div>
-            <div id="firebase-status" style="text-align: center; padding: 5px; font-size: 12px; color: #6c757d;">
+            <div id="firebase-status" style="text-align: center; padding: 5px; font-size: 12px; color: #999;">
                 <span id="connection-indicator">🔄 Connecting to server...</span>
             </div>
             <div id="edit-mode-banner" class="edit-mode-banner">
@@ -397,9 +458,9 @@
                     </div>
 
                     <div style="margin-top: 25px; text-align: center;">
-                        <button class="btn btn-primary" onclick="saveScores()">💾 Save Scores</button>
-                        <button class="btn btn-secondary" onclick="clearForm()">🔄 Clear Form</button>
-                        <button class="btn btn-edit" id="edit-mode-btn" onclick="enableEditMode()" style="display: none;">✏️ Edit My Scores</button>
+                        <button class="btn btn-primary" onclick="saveScores()">Save Scores</button>
+                        <button class="btn btn-secondary" onclick="clearForm()">Clear Form</button>
+                        <button class="btn btn-edit" id="edit-mode-btn" onclick="enableEditMode()" style="display: none;">Edit My Scores</button>
                     </div>
                 </div>
             </div>
@@ -465,7 +526,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
     <script>
-        // Firebase Configuration - REPLACE WITH YOUR CONFIG
+        // Firebase Configuration - NOTE: This is public and safe to commit
         const firebaseConfig = {
         apiKey: "AIzaSyBVQUrZ7KajXAWNcppBCQkCBPBtbB_RHvw",
         authDomain: "fbl-wuid-ranking.firebaseapp.com",
