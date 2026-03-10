@@ -1122,7 +1122,7 @@ function displayOverallStandings() {
             } else {
                 // Highlight if this workout index is in best 4 for athletes with 4+ workouts
                 const isBest4 = athlete.workoutsCompleted >= 4 && athlete.best4Indices.includes(workout.originalIndex);
-                const style = isBest4 ? 'font-weight: bold; color: #8e44ad;' : '';
+                const style = isBest4 ? 'font-weight: bold; color: #008AC2;' : '';
                 html += `<td style="text-align: center; ${style}">${pos}</td>`;
             }
         });
