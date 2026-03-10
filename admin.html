@@ -486,6 +486,7 @@
             <button class="tab active" onclick="showTab('config')">⚙️ Workout Config</button>
             <button class="tab" onclick="showTab('manage')">👥 Manage Athletes</button>
             <button class="tab" onclick="showTab('export')">💾 Data Management</button>
+            <button class="tab" onclick="showTab('history')">📊 Activity Log</button>
         </div>
 
         <div class="content">
@@ -785,6 +786,42 @@
                     </ul>
                 </div>
             </div>
+
+            <!-- ACTIVITY LOG TAB -->
+            <div id="history-tab" class="tab-content" style="display: none;">
+                <div class="form-section">
+                    <h3>Activity Log</h3>
+                    <p style="color: #999; margin-bottom: 20px;">Track all athlete registrations and score updates. Showing most recent activity first.</p>
+                    
+                    <div class="filters">
+                        <div class="filter-group">
+                            <label>Filter by Action</label>
+                            <select id="historyActionFilter" onchange="displayActivityLog()">
+                                <option value="all">All Actions</option>
+                                <option value="athlete_added">New Athletes</option>
+                                <option value="score_updated">Score Updates</option>
+                                <option value="athlete_deleted">Deletions</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Search Athlete</label>
+                            <input type="text" id="historySearchFilter" placeholder="Type athlete name..." oninput="displayActivityLog()">
+        </div>
+                    </div>
+
+                    <div id="activity-log-display"></div>
+                </div>
+
+                <div class="info-box">
+                    <h3>ℹ️ About Activity Log</h3>
+                    <ul>
+                        <li><strong>Automatic tracking:</strong> All athlete additions and score updates are logged</li>
+                        <li><strong>History limit:</strong> Keeps last 200 entries to manage storage</li>
+                        <li><strong>Synced:</strong> Activity log syncs across all devices via Firebase</li>
+                        <li><strong>Privacy:</strong> Only admins can view the activity log</li>
+                    </ul>
+                </div>
+            </div>
         </div>
         
         <div id="firebase-status" style="text-align: center; padding: 10px 5px; font-size: 11px; color: #666; border-top: 1px solid #333;">
@@ -897,9 +934,66 @@
                 !(s.name === name && s.gender === gender && s.team === team)
             );
             
+            // Log deletion
+            logActivity('athlete_deleted', name, gender, team, 'All scores deleted');
+            
             saveAllScores(allScores);
             displayAthleteList();
-            showStatus(`Deleted ${name}'s scores successfully! 🗑️`);
+            showStatus(`Deleted ${name}'s scores successfully!`);
+        }
+
+        // Display activity log
+        function displayActivityLog() {
+            let activityLog = getActivityLog();
+            const actionFilter = document.getElementById('historyActionFilter').value;
+            const searchFilter = document.getElementById('historySearchFilter').value.toLowerCase();
+
+            // Filter by action type
+            if (actionFilter !== 'all') {
+                activityLog = activityLog.filter(entry => entry.action === actionFilter);
+            }
+
+            // Filter by athlete name search
+            if (searchFilter) {
+                activityLog = activityLog.filter(entry => 
+                    entry.athleteName.toLowerCase().includes(searchFilter)
+                );
+            }
+
+            // Sort by newest first
+            activityLog.sort((a, b) => b.timestamp - a.timestamp);
+
+            let html = '<div class="table-container"><table>';
+            html += '<thead><tr>';
+            html += '<th style="width: 180px;">Date & Time</th>';
+            html += '<th style="width: 150px;">Action</th>';
+            html += '<th>Athlete</th>';
+            html += '<th>Details</th>';
+            html += '</tr></thead><tbody>';
+
+            activityLog.forEach(entry => {
+                const date = new Date(entry.timestamp);
+                const actionText = {
+                    'athlete_added': '<span style="color: #4caf50; font-weight: 600;">➕ New Athlete</span>',
+                    'score_updated': '<span style="color: #2196F3; font-weight: 600;">✏️ Score Update</span>',
+                    'athlete_deleted': '<span style="color: #f44336; font-weight: 600;">🗑️ Deleted</span>'
+                }[entry.action] || entry.action;
+                
+                html += '<tr>';
+                html += `<td style="font-size: 12px; color: #ccc;">${date.toLocaleString()}</td>`;
+                html += `<td>${actionText}</td>`;
+                html += `<td><strong>${entry.athleteName}</strong> <span style="color: #999;">(${entry.gender}, ${entry.team})</span></td>`;
+                html += `<td style="color: #bbb;">${entry.details}</td>`;
+                html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+
+            if (activityLog.length === 0) {
+                html = '<p style="text-align: center; color: #999; padding: 40px;">No activity found with current filters.</p>';
+            }
+
+            document.getElementById('activity-log-display').innerHTML = html;
         }
 
         // Show manage tab athletes on load
@@ -921,10 +1015,13 @@
             document.getElementById('config-tab').style.display = tabName === 'config' ? 'block' : 'none';
             document.getElementById('manage-tab').style.display = tabName === 'manage' ? 'block' : 'none';
             document.getElementById('export-tab').style.display = tabName === 'export' ? 'block' : 'none';
+            document.getElementById('history-tab').style.display = tabName === 'history' ? 'block' : 'none';
 
             // Load data for the tab
             if (tabName === 'manage') {
                 displayAthleteList();
+            } else if (tabName === 'history') {
+                displayActivityLog();
             }
         }
         // Initialize Firebase and load data on page load

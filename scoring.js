@@ -305,6 +305,7 @@ function toggleWorkoutDescription(wodNum) {
 // Firebase-enabled storage with localStorage fallback
 let scoresCache = [];
 let configCache = null;
+let activityLogCache = null;
 let firebaseReady = false;
 
 // Initialize Firebase listeners
@@ -359,6 +360,17 @@ function initFirebase() {
             if (typeof updateWorkoutSelector === 'function') {
                 updateWorkoutSelector();
             }
+        }
+    });
+    
+    // Listen for activity log changes
+    window.database.ref('activityLog').on('value', (snapshot) => {
+        const data = snapshot.val();
+        activityLogCache = data || [];
+        
+        // Update activity log display if on admin page
+        if (typeof displayActivityLog === 'function') {
+            displayActivityLog();
         }
     });
     
@@ -423,6 +435,54 @@ function saveWorkoutConfigData(config) {
             console.error('Firebase save error:', err);
         });
     }
+}
+
+// Activity Log Functions
+const ACTIVITY_LOG_KEY = 'fbl-activity-log';
+const MAX_ACTIVITY_LOG_ENTRIES = 200;
+
+function getActivityLog() {
+    if (firebaseReady && activityLogCache) {
+        return activityLogCache;
+    }
+    const data = localStorage.getItem(ACTIVITY_LOG_KEY);
+    return data ? JSON.parse(data) : [];
+}
+
+function saveActivityLog(log) {
+    activityLogCache = log;
+    
+    // Limit to last 200 entries
+    if (log.length > MAX_ACTIVITY_LOG_ENTRIES) {
+        log = log.slice(-MAX_ACTIVITY_LOG_ENTRIES);
+        activityLogCache = log;
+    }
+    
+    // Save to localStorage
+    localStorage.setItem(ACTIVITY_LOG_KEY, JSON.stringify(log));
+    
+    // Save to Firebase
+    if (firebaseReady) {
+        window.database.ref('activityLog').set(log).catch(err => {
+            console.error('Firebase activity log save error:', err);
+        });
+    }
+}
+
+function logActivity(action, athleteName, gender, team, details) {
+    const log = getActivityLog();
+    
+    const entry = {
+        timestamp: Date.now(),
+        action: action, // 'athlete_added', 'score_updated', 'athlete_deleted'
+        athleteName: athleteName,
+        gender: gender,
+        team: team,
+        details: details
+    };
+    
+    log.push(entry);
+    saveActivityLog(log);
 }
 
 // Show status message
@@ -608,10 +668,34 @@ function saveScores() {
     }
 
     if (existingIndex >= 0) {
+        const oldScore = allScores[existingIndex];
         allScores[existingIndex] = scores;
+        
+        // Log score update with details of what changed
+        const changedWorkouts = [];
+        for (let i = 1; i <= 6; i++) {
+            const wodKey = `wod${i}`;
+            const oldWod = oldScore.workouts[wodKey];
+            const newWod = workouts[wodKey];
+            if (oldWod && newWod && oldWod.score !== newWod.score) {
+                const config = getWorkoutConfig();
+                const wodName = config[i-1]?.name || `Workout ${i}`;
+                changedWorkouts.push(`${wodName}: ${oldWod.score || 'empty'} → ${newWod.score}`);
+            } else if (!oldWod && newWod && newWod.score) {
+                const config = getWorkoutConfig();
+                const wodName = config[i-1]?.name || `Workout ${i}`;
+                changedWorkouts.push(`${wodName}: new score ${newWod.score}`);
+            }
+        }
+        
+        if (changedWorkouts.length > 0) {
+            logActivity('score_updated', name, gender, team, changedWorkouts.join(', '));
+        }
+        
         showStatus('Scores updated successfully!');
     } else {
         allScores.push(scores);
+        logActivity('athlete_added', name, gender, team, 'New athlete registered');
         showStatus('Scores saved successfully!');
     }
     
