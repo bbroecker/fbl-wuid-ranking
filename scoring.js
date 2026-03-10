@@ -104,7 +104,7 @@ function saveWorkoutConfig() {
     saveWorkoutConfigData(config);
     updateInputForms();
     updateWorkoutSelector();
-    showStatus('Workout configuration saved! ✅');
+    showStatus('Workout configuration saved!');
 }
 
 // Load default configuration
@@ -427,15 +427,42 @@ function saveWorkoutConfigData(config) {
 
 // Show status message
 function showStatus(message, isError = false) {
-    const statusDiv = document.getElementById('status-message');
-    if (!statusDiv) return;
+    const container = document.getElementById('toast-container');
+    if (!container) return;
     
-    statusDiv.textContent = message;
-    statusDiv.className = 'status-message ' + (isError ? 'status-error' : 'status-success');
-    statusDiv.style.display = 'block';
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = 'toast' + (isError ? ' error' : '');
+    
+    const messageSpan = document.createElement('span');
+    messageSpan.className = 'toast-message';
+    messageSpan.textContent = message;
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'toast-close';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.onclick = () => removeToast(toast);
+    
+    toast.appendChild(messageSpan);
+    toast.appendChild(closeBtn);
+    container.appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => toast.classList.add('show'), 10);
+    
+    // Auto-remove after 4 seconds
+    setTimeout(() => removeToast(toast), 4000);
+}
+
+function removeToast(toast) {
+    if (!toast || !toast.parentElement) return;
+    
+    toast.classList.remove('show');
     setTimeout(() => {
-        statusDiv.style.display = 'none';
-    }, 5000);
+        if (toast.parentElement) {
+            toast.parentElement.removeChild(toast);
+        }
+    }, 300);
 }
 
 // Tab switching
@@ -582,10 +609,10 @@ function saveScores() {
 
     if (existingIndex >= 0) {
         allScores[existingIndex] = scores;
-        showStatus('Scores updated successfully! ✅');
+        showStatus('Scores updated successfully!');
     } else {
         allScores.push(scores);
-        showStatus('Scores saved successfully! ✅');
+        showStatus('Scores saved successfully!');
     }
     
     // Update editing state with new values (so continued edits work correctly)
@@ -1054,7 +1081,7 @@ function exportData() {
     a.href = url;
     a.download = `fbl-wuid-ranking-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
-    showStatus('Data exported successfully! 📥');
+    showStatus('Data exported successfully!');
 }
 
 // Import data from JSON
@@ -1083,7 +1110,7 @@ function importData() {
                     saveAllScores(data);
                 }
                 
-                showStatus('Data imported successfully! 📤');
+                showStatus('Data imported successfully!');
             } catch (error) {
                 showStatus('Error importing data. Please check the file format.', true);
             }
@@ -1098,7 +1125,7 @@ function clearAllData() {
     if (confirm('Are you sure you want to delete all stored data? This cannot be undone!')) {
         if (confirm('Really sure? This will delete all athlete scores!')) {
             localStorage.removeItem(STORAGE_KEY);
-            showStatus('All data cleared! 🗑️');
+            showStatus('All data cleared!');
             clearForm();
             
             // Refresh athlete list if on manage page

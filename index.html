@@ -35,6 +35,12 @@
             flex-wrap: wrap;
         }
 
+        .header-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
         .logo {
             max-width: 50px;
             height: auto;
@@ -45,18 +51,17 @@
             font-weight: 700;
             letter-spacing: 0.5px;
             text-transform: uppercase;
+            margin: 0;
         }
 
         .tagline {
             font-family: 'Arial Black', 'Arial Bold', Gadget, sans-serif;
-            font-size: 0.7em;
+            font-size: 0.65em;
             font-weight: 900;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
             text-transform: uppercase;
-            color: #fff;
-            opacity: 0.8;
+            color: #b794f6;
             white-space: nowrap;
-            margin-left: auto;
         }
 
         .tabs {
@@ -136,6 +141,54 @@
         .filter-group input:focus {
             outline: none;
             border-color: #8e44ad;
+        }
+
+        /* Autocomplete styles */
+        .autocomplete-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .autocomplete-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #2a2a2a;
+            border: 1px solid #555;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .autocomplete-suggestions.active {
+            display: block;
+        }
+
+        .autocomplete-suggestion {
+            padding: 10px 12px;
+            cursor: pointer;
+            color: #fff;
+            transition: background 0.2s;
+        }
+
+        .autocomplete-suggestion:hover,
+        .autocomplete-suggestion.selected {
+            background: #3a3a3a;
+        }
+
+        .autocomplete-suggestion.selected {
+            background: #8e44ad;
+        }
+
+        .autocomplete-no-results {
+            padding: 10px 12px;
+            color: #999;
+            font-style: italic;
         }
 
         .form-section {
@@ -334,36 +387,97 @@
             color: #ccc;
         }
 
-        .status-message {
-            padding: 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            display: none;
+        /* Toast Notification */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: rgba(142, 68, 173, 0.95);
+            color: #fff;
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-width: 300px;
+            max-width: 400px;
+            pointer-events: auto;
+            border: 1px solid #b794f6;
+            transform: translateX(450px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            background: rgba(183, 28, 28, 0.95);
+            border-color: #ef9a9a;
+        }
+
+        .toast-message {
+            flex: 1;
             font-weight: 500;
+            font-size: 14px;
+            line-height: 1.4;
         }
 
-        .status-success {
-            background: #1b5e20;
-            color: #a5d6a7;
-            border: 1px solid #2e7d32;
+        .toast-close {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            line-height: 1;
         }
 
-        .status-error {
-            background: #b71c1c;
-            color: #ef9a9a;
-            border: 1px solid #c62828;
+        .toast-close:hover {
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .toast-container {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+            }
+
+            .toast {
+                min-width: auto;
+                max-width: 100%;
+            }
         }
 
         .edit-mode-banner {
-            background: #3a3000;
-            color: #ffd54f;
+            background: rgba(142, 68, 173, 0.2);
+            color: #b794f6;
             padding: 12px 20px;
             border-radius: 4px;
             margin-bottom: 20px;
-            text-align: center;
+            text-align: left;
             font-weight: 600;
             display: none;
-            border: 1px solid #ffa726;
+            border: 1px solid #8e44ad;
         }
 
         @media (max-width: 768px) {
@@ -376,11 +490,8 @@
             }
 
             .tagline {
-                font-size: 0.5em;
-                width: 100%;
-                margin-left: 0;
-                text-align: left;
-                margin-top: 5px;
+                font-size: 0.55em;
+                letter-spacing: 1px;
             }
 
             .logo {
@@ -579,8 +690,10 @@
     <div class="container">
         <div class="header">
             <img src="wuid_white_onblack.avif" alt="Wuid Logo" class="logo">
-            <h1>WUID FBL Leaderboard</h1>
-            <div class="tagline">OK, BUT FIRST CROSSFIT</div>
+            <div class="header-content">
+                <h1>WUID FBL Leaderboard</h1>
+                <div class="tagline">OK, BUT FIRST CROSSFIT</div>
+            </div>
         </div>
 
         <div class="tabs">
@@ -590,9 +703,8 @@
         </div>
 
         <div class="content">
-            <div id="status-message" class="status-message"></div>
             <div id="edit-mode-banner" class="edit-mode-banner">
-                ✏️ Editing mode - Update your scores and click "Save Scores" to save changes
+                Editing mode - Update your scores and click "Save Scores" to save changes
             </div>
 
             <!-- INPUT SCORES TAB -->
@@ -600,7 +712,10 @@
                 <div class="filters">
                     <div class="filter-group">
                         <label>Athlete Name</label>
-                        <input type="text" id="athleteName" placeholder="Enter your name" onchange="checkExistingAthlete()">
+                        <div class="autocomplete-container">
+                            <input type="text" id="athleteName" placeholder="Enter your name" onchange="checkExistingAthlete()" oninput="showAutocompleteSuggestions(this)" onkeydown="handleAutocompleteKeydown(event)" autocomplete="off">
+                            <div class="autocomplete-suggestions" id="athleteNameSuggestions"></div>
+                        </div>
                     </div>
                     <div class="filter-group">
                         <label>Gender</label>
@@ -692,6 +807,9 @@
         </div>
     </div>
 
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
     <!-- Workout Description Modal -->
     <div id="description-modal" class="description-modal" onclick="closeDescriptionModal(event)">
         <div class="description-modal-content" onclick="event.stopPropagation()">
@@ -744,6 +862,114 @@
     <script>
         // Track the original athlete identity when editing (to handle name/team/gender changes)
         let editingOriginalIdentity = null;
+        let autocompleteSelectedIndex = -1;
+        
+        // Get unique athlete names from all scores
+        function getUniqueAthleteNames() {
+            const allScores = getAllScores();
+            const namesMap = new Map();
+            
+            allScores.forEach(score => {
+                const lowerName = score.name.toLowerCase();
+                if (!namesMap.has(lowerName)) {
+                    namesMap.set(lowerName, score.name);
+                }
+            });
+            
+            return Array.from(namesMap.values()).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+        }
+        
+        // Show autocomplete suggestions
+        function showAutocompleteSuggestions(input) {
+            const value = input.value.trim().toLowerCase();
+            const suggestionsDiv = document.getElementById('athleteNameSuggestions');
+            
+            if (!value) {
+                suggestionsDiv.classList.remove('active');
+                return;
+            }
+            
+            const allNames = getUniqueAthleteNames();
+            const matches = allNames.filter(name => name.toLowerCase().includes(value));
+            
+            if (matches.length === 0) {
+                suggestionsDiv.classList.remove('active');
+                return;
+            }
+            
+            suggestionsDiv.innerHTML = matches.map((name, index) => {
+                const escapedName = name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                return `<div class="autocomplete-suggestion" data-index="${index}" data-name="${escapedName}">${escapedName}</div>`;
+            }).join('');
+            
+            // Add click listeners to suggestions
+            suggestionsDiv.querySelectorAll('.autocomplete-suggestion').forEach(suggestion => {
+                suggestion.addEventListener('click', function() {
+                    selectAutocompleteSuggestion(matches[this.dataset.index]);
+                });
+            });
+            
+            autocompleteSelectedIndex = -1;
+            suggestionsDiv.classList.add('active');
+        }
+        
+        // Select an autocomplete suggestion
+        function selectAutocompleteSuggestion(name) {
+            const input = document.getElementById('athleteName');
+            input.value = name;
+            document.getElementById('athleteNameSuggestions').classList.remove('active');
+            checkExistingAthlete();
+            input.focus();
+        }
+        
+        // Handle keyboard navigation in autocomplete
+        function handleAutocompleteKeydown(e) {
+            const suggestionsDiv = document.getElementById('athleteNameSuggestions');
+            const isActive = suggestionsDiv.classList.contains('active');
+            
+            if (!isActive) return;
+            
+            const suggestions = suggestionsDiv.querySelectorAll('.autocomplete-suggestion');
+            const maxIndex = suggestions.length - 1;
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                autocompleteSelectedIndex = Math.min(autocompleteSelectedIndex + 1, maxIndex);
+                updateAutocompleteSelection(suggestions);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                autocompleteSelectedIndex = Math.max(autocompleteSelectedIndex - 1, -1);
+                updateAutocompleteSelection(suggestions);
+            } else if (e.key === 'Enter' && autocompleteSelectedIndex >= 0) {
+                e.preventDefault();
+                suggestions[autocompleteSelectedIndex].click();
+            } else if (e.key === 'Escape') {
+                suggestionsDiv.classList.remove('active');
+                autocompleteSelectedIndex = -1;
+            }
+        }
+        
+        // Update visual selection in autocomplete
+        function updateAutocompleteSelection(suggestions) {
+            suggestions.forEach((suggestion, index) => {
+                if (index === autocompleteSelectedIndex) {
+                    suggestion.classList.add('selected');
+                    suggestion.scrollIntoView({ block: 'nearest' });
+                } else {
+                    suggestion.classList.remove('selected');
+                }
+            });
+        }
+        
+        // Close autocomplete when clicking outside
+        document.addEventListener('click', function(e) {
+            const input = document.getElementById('athleteName');
+            const suggestionsDiv = document.getElementById('athleteNameSuggestions');
+            
+            if (e.target !== input && !suggestionsDiv.contains(e.target)) {
+                suggestionsDiv.classList.remove('active');
+            }
+        });
         
         // Check if athlete already exists and load their data
         function checkExistingAthlete() {
@@ -781,7 +1007,7 @@
                 } else {
                     // Name is the same - stay in edit mode for this athlete
                     // (gender/team may have changed in the form, but we're still editing the same person)
-                    showStatus('✏️ Editing: ' + name + ' (' + gender + ', ' + team + ') - Update and save when ready', false);
+                    // Banner already visible, no need for status message
                 }
             } else {
                 // Not currently editing - look for athlete by name only
@@ -793,7 +1019,6 @@
                     // Found athlete - load their data (including their actual team/gender)
                     document.getElementById('athleteGender').value = existing.gender;
                     document.getElementById('athleteTeam').value = existing.team;
-                    showStatus('✏️ Found existing athlete: ' + existing.name + ' - Loading scores...', false);
                     enableEditMode();
                 } else {
                     // No match - clear workout inputs for new athlete
@@ -899,7 +1124,6 @@
 
                 document.getElementById('edit-mode-banner').style.display = 'block';
                 document.getElementById('edit-mode-btn').style.display = 'none';
-                showStatus('✏️ Editing: ' + existing.name + ' (' + existing.gender + ', ' + existing.team + ') - Update scores and click "Save Scores"', false);
             }
         }
 

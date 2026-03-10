@@ -81,9 +81,11 @@
             font-weight: 900;
             letter-spacing: 1.5px;
             text-transform: uppercase;
-            color: #fff;
-            opacity: 0.9;
+            color: #b794f6;
             margin-top: 10px;
+            padding-top: 8px;
+            border-top: 2px solid rgba(183, 148, 246, 0.4);
+            display: inline-block;
         }
 
         .tabs {
@@ -304,23 +306,85 @@
             background: #333;
         }
 
-        .status-message {
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: none;
+        /* Toast Notification */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
         }
 
-        .status-success {
-            background: #1b5e20;
-            color: #a5d6a7;
-            border: 1px solid #2e7d32;
+        .toast {
+            background: rgba(142, 68, 173, 0.95);
+            color: #fff;
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-width: 300px;
+            max-width: 400px;
+            pointer-events: auto;
+            border: 1px solid #b794f6;
+            transform: translateX(450px);
+            opacity: 0;
+            transition: all 0.3s ease;
         }
 
-        .status-error {
-            background: #b71c1c;
-            color: #ef9a9a;
-            border: 1px solid #c62828;
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            background: rgba(183, 28, 28, 0.95);
+            border-color: #ef9a9a;
+        }
+
+        .toast-message {
+            flex: 1;
+            font-weight: 500;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            line-height: 1;
+        }
+
+        .toast-close:hover {
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .toast-container {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+            }
+
+            .toast {
+                min-width: auto;
+                max-width: 100%;
+            }
         }
 
         .admin-section {
@@ -425,8 +489,6 @@
         </div>
 
         <div class="content">
-            <div id="status-message" class="status-message"></div>
-
             <!-- WORKOUT CONFIG TAB -->
             <div id="config-tab" class="tab-content">
                 <div class="form-section">
@@ -729,6 +791,9 @@
             <span id="connection-indicator">Connecting to server...</span>
         </div>
     </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
