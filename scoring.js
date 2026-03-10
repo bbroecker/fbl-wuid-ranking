@@ -374,6 +374,37 @@ function initFirebase() {
         }
     });
     
+    // Listen for prediction changes
+    window.database.ref('predictions').on('value', (snapshot) => {
+        const data = snapshot.val();
+        // Ensure default structure with proper config defaults
+        predictionsCache = data || { 
+            config: { name: '', visible: false, deadline: null }, 
+            submissions: {}, 
+            votes: {} 
+        };
+        
+        // Update prediction tab button
+        if (typeof updatePredictionTabButton === 'function') {
+            updatePredictionTabButton();
+        }
+        
+        // Update prediction displays if on prediction page
+        if (typeof displayPredictions === 'function' && currentPredictionUser) {
+            displayPredictions();
+        }
+        if (typeof displayAdminPredictions === 'function') {
+            displayAdminPredictions();
+        }
+        if (typeof loadPredictionAdminConfig === 'function') {
+            // Only reload if on admin predictions tab
+            const predTab = document.getElementById('predictions-tab');
+            if (predTab && predTab.style.display === 'block') {
+                loadPredictionAdminConfig();
+            }
+        }
+    });
+    
     // Monitor connection status
     window.database.ref('.info/connected').on('value', (snapshot) => {
         if (indicator) {
@@ -542,6 +573,7 @@ function showTab(tabName) {
         'input': 'input-tab',
         'workout': 'workout-tab',
         'overall': 'overall-tab',
+        'prediction': 'prediction-tab',
         'manage': 'manage-tab',
         'export': 'export-tab'
     };
@@ -557,6 +589,8 @@ function showTab(tabName) {
         displayWorkoutRankings();
     } else if (tabName === 'overall') {
         displayOverallStandings();
+    } else if (tabName === 'prediction') {
+        populatePredictionAthletes();
     }
 }
 
@@ -1221,9 +1255,483 @@ function clearAllData() {
     }
 }
 
+// ===== PREDICTION & VOTING SYSTEM =====
+
+// Storage key for predictions cache
+let predictionsCache = null;
+let currentPredictionUser = null;
+let predictionCountdownInterval = null;
+
+// Update prediction tab button visibility and name
+function updatePredictionTabButton() {
+    const config = getPredictionConfig();
+    const tabButton = document.getElementById('prediction-tab-button');
+    
+    if (!tabButton) return;
+    
+    if (config.visible) {
+        tabButton.style.display = 'block';
+        tabButton.textContent = config.name || 'Predictions';
+    } else {
+        tabButton.style.display = 'none';
+    }
+}
+
+// Get predictions config
+function getPredictionConfig() {
+    const defaultConfig = { name: '', visible: false, deadline: null };
+    
+    if (!database) {
+        const stored = localStorage.getItem('fbl-prediction-config');
+        return stored ? JSON.parse(stored) : defaultConfig;
+    }
+    
+    const config = predictionsCache?.config;
+    // If config exists but is empty object or missing properties, merge with defaults
+    if (!config || typeof config !== 'object' || Object.keys(config).length === 0) {
+        return defaultConfig;
+    }
+    
+    // Ensure all required properties exist
+    return {
+        name: config.name !== undefined ? config.name : defaultConfig.name,
+        visible: config.visible !== undefined ? config.visible : defaultConfig.visible,
+        deadline: config.deadline !== undefined ? config.deadline : defaultConfig.deadline
+    };
+}
+
+// Save prediction config (admin only)
+function savePredictionConfig(config) {
+    localStorage.setItem('fbl-prediction-config', JSON.stringify(config));
+    
+    if (database) {
+        database.ref('predictions/config').set(config);
+    }
+    
+    if (predictionsCache) {
+        predictionsCache.config = config;
+    }
+    
+    // Update tab button visibility and text
+    updatePredictionTabButton();
+}
+
+// Get all predictions
+function getAllPredictions() {
+    if (!database) {
+        const stored = localStorage.getItem('fbl-predictions');
+        return stored ? JSON.parse(stored) : {};
+    }
+    return predictionsCache?.submissions || {};
+}
+
+// Save all predictions
+function saveAllPredictions(predictions) {
+    localStorage.setItem('fbl-predictions', JSON.stringify(predictions));
+    
+    if (database) {
+        database.ref('predictions/submissions').set(predictions);
+    }
+    
+    if (predictionsCache) {
+        predictionsCache.submissions = predictions;
+    }
+}
+
+// Get all votes
+function getAllVotes() {
+    if (!database) {
+        const stored = localStorage.getItem('fbl-prediction-votes');
+        return stored ? JSON.parse(stored) : {};
+    }
+    return predictionsCache?.votes || {};
+}
+
+// Save all votes
+function saveAllVotes(votes) {
+    localStorage.setItem('fbl-prediction-votes', JSON.stringify(votes));
+    
+    if (database) {
+        database.ref('predictions/votes').set(votes);
+    }
+    
+    if (predictionsCache) {
+        predictionsCache.votes = votes;
+    }
+}
+
+// Authenticate prediction user
+function authenticatePredictionUser() {
+    const athleteName = document.getElementById('predictionAthleteName')?.value;
+    
+    if (!athleteName) {
+        document.getElementById('prediction-content').style.display = 'none';
+        currentPredictionUser = null;
+        return;
+    }
+    
+    // Check if prediction is visible
+    const config = getPredictionConfig();
+    if (!config.visible) {
+        document.getElementById('prediction-content').style.display = 'none';
+        document.getElementById('prediction-locked').style.display = 'block';
+        return;
+    }
+    
+    document.getElementById('prediction-locked').style.display = 'none';
+    currentPredictionUser = athleteName;
+    
+    // Load user's prediction if exists
+    const predictions = getAllPredictions();
+    const userKey = athleteName.toLowerCase().replace(/\s+/g, '_');
+    const userPrediction = predictions[userKey];
+    
+    if (userPrediction) {
+        document.getElementById('my-prediction-title').value = userPrediction.title || '';
+        document.getElementById('my-prediction-description').value = userPrediction.description || '';
+    } else {
+        document.getElementById('my-prediction-title').value = '';
+        document.getElementById('my-prediction-description').value = '';
+    }
+    
+    // Display content
+    document.getElementById('prediction-content').style.display = 'block';
+    displayPredictions();
+}
+
+// Display all predictions
+function displayPredictions() {
+    if (!currentPredictionUser) return;
+    
+    const config = getPredictionConfig();
+    const predictions = getAllPredictions();
+    const votes = getAllVotes();
+    
+    // Clear existing countdown interval
+    if (predictionCountdownInterval) {
+        clearInterval(predictionCountdownInterval);
+        predictionCountdownInterval = null;
+    }
+    
+    // Check deadline and setup countdown
+    const deadlineBanner = document.getElementById('prediction-deadline-banner');
+    if (config.deadline) {
+        const updateCountdown = () => {
+            const deadlineDate = new Date(config.deadline);
+            const now = new Date();
+            
+            if (now < deadlineDate) {
+                const msLeft = deadlineDate - now;
+                const hoursLeft = Math.floor(msLeft / (1000 * 60 * 60));
+                const minutesLeft = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
+                
+                if (hoursLeft > 24) {
+                    const daysLeft = Math.floor(hoursLeft / 24);
+                    deadlineBanner.textContent = `Prediction deadline: ${deadlineDate.toLocaleString()} (${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining)`;
+                } else if (hoursLeft > 0) {
+                    deadlineBanner.textContent = `Prediction deadline: ${deadlineDate.toLocaleString()} (${hoursLeft}h ${minutesLeft}m remaining)`;
+                } else {
+                    deadlineBanner.textContent = `Prediction deadline: ${deadlineDate.toLocaleString()} (${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''} remaining)`;
+                }
+                deadlineBanner.style.display = 'block';
+            } else {
+                deadlineBanner.textContent = 'Prediction deadline has passed';
+                deadlineBanner.style.display = 'block';
+                if (predictionCountdownInterval) {
+                    clearInterval(predictionCountdownInterval);
+                    predictionCountdownInterval = null;
+                }
+            }
+        };
+        
+        // Update immediately
+        updateCountdown();
+        
+        // Update every minute
+        predictionCountdownInterval = setInterval(updateCountdown, 60000);
+    } else {
+        deadlineBanner.style.display = 'none';
+    }
+    
+    // Get current user's vote
+    const userKey = currentPredictionUser.toLowerCase().replace(/\s+/g, '_');
+    const currentVote = votes[userKey];
+    
+    // Filter published predictions (those with both title and description)
+    const publishedPredictions = Object.entries(predictions).filter(([key, pred]) => 
+        pred.title && pred.title.trim() && pred.description && pred.description.trim()
+    );
+    
+    // Build prediction cards
+    const container = document.getElementById('prediction-cards-container');
+    
+    if (publishedPredictions.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">No predictions yet. Be the first to create one!</p>';
+    } else {
+        let html = '';
+        
+        publishedPredictions.forEach(([key, pred]) => {
+            // Count votes for this prediction
+            const voteCount = Object.values(votes).filter(v => v === key).length;
+            const isSelected = currentVote === key;
+            
+            html += `
+                <div class="prediction-card ${isSelected ? 'selected' : ''}" id="prediction-card-${key}">
+                    <input type="radio" 
+                           name="prediction-vote" 
+                           value="${key}" 
+                           class="prediction-radio"
+                           ${isSelected ? 'checked' : ''}
+                           onclick="votePrediction('${key}')">
+                    <div class="prediction-title-wrapper">
+                        <div class="prediction-title">${escapeHtml(pred.title)}</div>
+                        <span class="prediction-author">by ${escapeHtml(pred.athleteName)}</span>
+                        <div class="prediction-description-link" onclick="showPredictionDescription('${escapeHtml(pred.title).replace(/'/g, "\\'")}, by ${escapeHtml(pred.athleteName).replace(/'/g, "\\'")}', \`${pred.description.replace(/`/g, '\\`')}\`)">
+                            <button class="info-icon-btn" onclick="event.stopPropagation();">?</button>
+                            <span class="prediction-description-text">Description</span>
+                        </div>
+                    </div>
+                    <div class="prediction-votes">${voteCount} vote${voteCount !== 1 ? 's' : ''}</div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    // Display vote chart
+    displayVoteChart(publishedPredictions, votes);
+}
+
+// Show prediction description in modal
+function showPredictionDescription(title, description) {
+    const modal = document.getElementById('description-modal');
+    const modalTitle = document.getElementById('description-modal-title');
+    const text = document.getElementById('description-modal-text');
+    
+    if (modal && modalTitle && text) {
+        modalTitle.textContent = title;
+        text.textContent = description;
+        modal.classList.add('active');
+        
+        // Prevent body scroll when modal is open
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// Vote for a prediction
+function votePrediction(key) {
+    if (!currentPredictionUser) return;
+    
+    const config = getPredictionConfig();
+    
+    // Check deadline
+    if (config.deadline && new Date() > new Date(config.deadline)) {
+        showToast('Voting deadline has passed', true);
+        return;
+    }
+    
+    const votes = getAllVotes();
+    const userKey = currentPredictionUser.toLowerCase().replace(/\s+/g, '_');
+    
+    // Toggle vote
+    if (votes[userKey] === key) {
+        delete votes[userKey]; // Unvote
+    } else {
+        votes[userKey] = key; // Vote
+    }
+    
+    saveAllVotes(votes);
+    displayPredictions();
+}
+
+// Display vote chart
+function displayVoteChart(predictions, votes) {
+    const chartContainer = document.getElementById('prediction-chart');
+    
+    if (predictions.length === 0) {
+        chartContainer.innerHTML = '<p style="text-align: center; color: #999;">No predictions to display</p>';
+        return;
+    }
+    
+    // Count votes for each prediction
+    const voteCounts = {};
+    let maxVotes = 0;
+    
+    predictions.forEach(([key]) => {
+        const count = Object.values(votes).filter(v => v === key).length;
+        voteCounts[key] = count;
+        maxVotes = Math.max(maxVotes, count);
+    });
+    
+    // Sort by vote count descending
+    const sortedPredictions = [...predictions].sort((a, b) => 
+        (voteCounts[b[0]] || 0) - (voteCounts[a[0]] || 0)
+    );
+    
+    // Build chart
+    let html = '';
+    sortedPredictions.forEach(([key, pred]) => {
+        const count = voteCounts[key] || 0;
+        const percentage = maxVotes > 0 ? (count / maxVotes) * 100 : 0;
+        
+        html += `
+            <div class="prediction-bar">
+                <div class="prediction-bar-label">${escapeHtml(pred.title)}</div>
+                <div class="prediction-bar-container">
+                    <div class="prediction-bar-fill" style="width: ${percentage}%;">
+                        <span class="prediction-bar-value">${count}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    chartContainer.innerHTML = html;
+}
+
+// Save user's prediction
+function saveMyPrediction() {
+    if (!currentPredictionUser) {
+        showToast('Please select your name first', true);
+        return;
+    }
+    
+    const config = getPredictionConfig();
+    
+    // Check deadline
+    if (config.deadline && new Date() > new Date(config.deadline)) {
+        showToast('Prediction deadline has passed', true);
+        return;
+    }
+    
+    const title = document.getElementById('my-prediction-title').value.trim();
+    const description = document.getElementById('my-prediction-description').value.trim();
+    
+    const predictions = getAllPredictions();
+    const votes = getAllVotes();
+    const userKey = currentPredictionUser.toLowerCase().replace(/\s+/g, '_');
+    const existing = predictions[userKey];
+    
+    // If both fields are empty, delete the prediction
+    if (!title && !description) {
+        if (existing) {
+            if (!confirm('Delete your prediction? This will also remove all votes for it.')) {
+                return;
+            }
+            
+            // Delete prediction
+            delete predictions[userKey];
+            
+            // Remove all votes for this prediction
+            Object.keys(votes).forEach(voterKey => {
+                if (votes[voterKey] === userKey) {
+                    delete votes[voterKey];
+                }
+            });
+            
+            saveAllPredictions(predictions);
+            saveAllVotes(votes);
+            showToast('Your prediction has been deleted');
+            displayPredictions();
+        } else {
+            showToast('No prediction to delete', true);
+        }
+        return;
+    }
+    
+    // Require both title and description for saving
+    if (!title || !description) {
+        showToast('Please fill in both title and description', true);
+        return;
+    }
+    
+    // Check if user is editing existing prediction with votes
+    const hasVotes = Object.values(votes).filter(v => v === userKey).length > 0;
+    
+    if (existing && hasVotes && (existing.title !== title || existing.description !== description)) {
+        if (!confirm('⚠️ Warning: Editing your prediction will remove all votes for it. Continue?')) {
+            return;
+        }
+        
+        // Remove all votes for this prediction
+        Object.keys(votes).forEach(voterKey => {
+            if (votes[voterKey] === userKey) {
+                delete votes[voterKey];
+            }
+        });
+        saveAllVotes(votes);
+    }
+    
+    // Save prediction
+    predictions[userKey] = {
+        title: title,
+        description: description,
+        athleteName: currentPredictionUser,
+        timestamp: Date.now()
+    };
+    
+    saveAllPredictions(predictions);
+    showToast('Your prediction has been saved!');
+    displayPredictions();
+}
+
+// Clear user's prediction
+function clearMyPrediction() {
+    document.getElementById('my-prediction-title').value = '';
+    document.getElementById('my-prediction-description').value = '';
+}
+
+// Reset all predictions (admin only)
+function resetPredictions() {
+    if (!confirm('Are you sure you want to reset all predictions and votes? This cannot be undone!')) {
+        return;
+    }
+    
+    saveAllPredictions({});
+    saveAllVotes({});
+    savePredictionConfig({ name: '', visible: false, deadline: null });
+    
+    showToast('Predictions reset successfully');
+    
+    // Refresh displays
+    const athleteSelect = document.getElementById('predictionAthleteName');
+    if (athleteSelect) {
+        athleteSelect.value = '';
+        authenticatePredictionUser();
+    }
+}
+
+// Populate athlete names for prediction page
+function populatePredictionAthletes() {
+    const select = document.getElementById('predictionAthleteName');
+    if (!select) return;
+    
+    const allScores = getAllScores();
+    const uniqueNames = [...new Set(allScores.map(s => s.name))].sort((a, b) => 
+        a.toLowerCase().localeCompare(b.toLowerCase())
+    );
+    
+    select.innerHTML = '<option value="">-- Select Your Name --</option>';
+    uniqueNames.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        select.appendChild(option);
+    });
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 // Initialize on page load
 window.addEventListener('DOMContentLoaded', function() {
     loadConfigIntoForm();
     updateInputForms();
     updateWorkoutSelector();
+    updatePredictionTabButton();
 });
