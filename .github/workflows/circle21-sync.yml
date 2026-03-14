@@ -1,9 +1,9 @@
 name: Circle21 Auto Sync
 
 on:
-  # Run every 20 minutes
+  # Run every hour
   schedule:
-    - cron: '*/20 * * * *'
+    - cron: '0 * * * *'
   
   # Allow manual trigger
   workflow_dispatch:
