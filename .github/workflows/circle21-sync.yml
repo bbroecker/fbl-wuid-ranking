@@ -22,7 +22,10 @@ jobs:
           python-version: '3.11'
       
       - name: Run Circle21 Sync
-        run: python3 circle21_sync.py
+        run: |
+          echo "Starting Circle21 sync..."
+          python3 circle21_sync.py
+          echo "Sync script completed with exit code: $?"
         env:
           # No environment variables needed - credentials are in the script
           PYTHONUNBUFFERED: 1

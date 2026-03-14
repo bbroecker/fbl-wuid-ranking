@@ -361,7 +361,180 @@ function initializeCircle21Module() {
         displayCircle21Leaderboard();
     }
     
+    // Load tracked athletes list for admin panel
+    if (document.getElementById('circle21-athletes-list')) {
+        loadCircle21TrackedAthletes();
+    }
+    
     console.log('Circle21: Module initialized');
+}
+
+// ====================================
+// Circle21 Athlete Management (Admin)
+// ====================================
+
+let circle21TrackedAthletes = [];
+
+// Load tracked athletes from Firebase
+function loadCircle21TrackedAthletes() {
+    if (!window.database) {
+        document.getElementById('circle21-athletes-list').innerHTML = '<p style="color: #ff6b6b; text-align: center; padding: 20px;">❌ Firebase not available</p>';
+        return;
+    }
+    
+    const athletesRef = window.database.ref('circle21/config/athletes_to_track');
+    
+    athletesRef.on('value', (snapshot) => {
+        circle21TrackedAthletes = snapshot.val() || [];
+        displayCircle21TrackedAthletes();
+    });
+}
+
+// Display tracked athletes in admin panel
+function displayCircle21TrackedAthletes() {
+    const container = document.getElementById('circle21-athletes-list');
+    const countElement = document.getElementById('circle21-count');
+    
+    if (!container) return;
+    
+    countElement.textContent = circle21TrackedAthletes.length;
+    
+    if (circle21TrackedAthletes.length === 0) {
+        container.innerHTML = '<p style="color: #888; text-align: center; padding: 20px;">No athletes tracked yet. Add your first athlete above!</p>';
+        return;
+    }
+    
+    let html = '<div style="display: grid; gap: 10px;">';
+    
+    circle21TrackedAthletes.forEach((athlete, index) => {
+        const identifierDisplay = athlete.identifier 
+            ? `<span style="color: #888; font-size: 12px; margin-left: 10px;">ID: ${athlete.identifier}</span>` 
+            : '';
+        
+        const genderBadge = athlete.gender === 'M' 
+            ? '<span style="background: #3498db; color: white; padding: 2px 8px; border-radius: 3px; font-size: 11px; margin-left: 8px;">M</span>'
+            : '<span style="background: #e74c3c; color: white; padding: 2px 8px; border-radius: 3px; font-size: 11px; margin-left: 8px;">F</span>';
+        
+        html += `
+            <div style="background: #333; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong style="font-size: 16px; color: #fff;">${athlete.name}</strong>
+                    ${genderBadge}
+                    ${identifierDisplay}
+                </div>
+                <button onclick="removeCircle21Athlete(${index})" style="padding: 8px 16px; background: #e74c3c; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: 600;">
+                    🗑️ Remove
+                </button>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Add new athlete
+function addCircle21Athlete() {
+    const nameInput = document.getElementById('circle21-athlete-name');
+    const genderSelect = document.getElementById('circle21-athlete-gender');
+    const identifierInput = document.getElementById('circle21-athlete-identifier');
+    
+    const name = nameInput.value.trim();
+    const gender = genderSelect.value;
+    const identifier = identifierInput.value.trim();
+    
+    // Validation
+    if (!name) {
+        alert('❌ Please enter an athlete name');
+        return;
+    }
+    
+    if (!gender) {
+        alert('❌ Please select a gender');
+        return;
+    }
+    
+    // Check for duplicates
+    const exists = circle21TrackedAthletes.some(a => 
+        a.name.toLowerCase() === name.toLowerCase() && 
+        a.gender === gender &&
+        a.identifier === (identifier || null)
+    );
+    
+    if (exists) {
+        alert('⚠️  This athlete is already being tracked');
+        return;
+    }
+    
+    // Try to parse identifier as number (age)
+    let finalIdentifier = null;
+    if (identifier) {
+        const asNumber = parseInt(identifier);
+        finalIdentifier = isNaN(asNumber) ? identifier : asNumber;
+    }
+    
+    // Add to list
+    const newAthlete = {
+        name: name,
+        gender: gender,
+        identifier: finalIdentifier
+    };
+    
+    circle21TrackedAthletes.push(newAthlete);
+    
+    // Save to Firebase
+    saveCircle21TrackedAthletes();
+    
+    // Clear form
+    nameInput.value = '';
+    genderSelect.value = '';
+    identifierInput.value = '';
+    
+    // Show success message
+    showToast(`✅ Added ${name} to Circle21 tracking`);
+}
+
+// Remove athlete
+function removeCircle21Athlete(index) {
+    const athlete = circle21TrackedAthletes[index];
+    
+    if (!confirm(`Remove ${athlete.name} from Circle21 tracking?`)) {
+        return;
+    }
+    
+    circle21TrackedAthletes.splice(index, 1);
+    saveCircle21TrackedAthletes();
+    
+    showToast(`✅ Removed ${athlete.name} from Circle21 tracking`);
+}
+
+// Save tracked athletes to Firebase
+function saveCircle21TrackedAthletes() {
+    if (!window.database) {
+        alert('❌ Firebase not available');
+        return;
+    }
+    
+    const athletesRef = window.database.ref('circle21/config/athletes_to_track');
+    
+    athletesRef.set(circle21TrackedAthletes)
+        .then(() => {
+            console.log('Circle21: Tracked athletes saved to Firebase');
+        })
+        .catch((error) => {
+            console.error('Circle21: Error saving tracked athletes:', error);
+            alert('❌ Error saving to Firebase: ' + error.message);
+        });
+}
+
+// Toast notification helper (reuse from main admin.html if available)
+function showToast(message) {
+    if (window.showToast) {
+        window.showToast(message);
+    } else {
+        // Fallback to alert
+        alert(message);
+    }
 }
 
 // Initialize when page loads

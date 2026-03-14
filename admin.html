@@ -486,6 +486,7 @@
         <div class="tabs">
             <button class="tab active" onclick="showTab('config')">⚙️ Workout Config</button>
             <button class="tab" onclick="showTab('manage')">👥 Manage Athletes</button>
+            <button class="tab" onclick="showTab('circle21')">🏆 Circle21 Tracking</button>
             <button class="tab" onclick="showTab('export')">💾 Data Management</button>
             <button class="tab" onclick="showTab('history')">📊 Activity Log</button>
         </div>
@@ -823,6 +824,60 @@
                     </ul>
                 </div>
             </div>
+
+            <!-- CIRCLE21 TRACKING TAB -->
+            <div id="circle21-tab" class="tab-content" style="display: none;">
+                <div class="form-section">
+                    <h3>Circle21 Competition Tracking</h3>
+                    <p style="color: #999; margin-bottom: 20px;">Manage which athletes are tracked in the Circle21 competition. Changes sync automatically to the leaderboard.</p>
+                    
+                    <div class="form-group">
+                        <h4 style="margin-bottom: 15px;">➕ Add New Athlete</h4>
+                        <div style="display: grid; grid-template-columns: 2fr 1fr 1.5fr auto; gap: 10px; align-items: end;">
+                            <div>
+                                <label>Athlete Name</label>
+                                <input type="text" id="circle21-athlete-name" placeholder="e.g., Anna Horatz" style="width: 100%;">
+                            </div>
+                            <div>
+                                <label>Gender</label>
+                                <select id="circle21-athlete-gender" style="width: 100%;">
+                                    <option value="">Select...</option>
+                                    <option value="M">Male (M)</option>
+                                    <option value="F">Female (F)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Identifier (optional)</label>
+                                <input type="text" id="circle21-athlete-identifier" placeholder="Age or partial user_id" style="width: 100%;">
+                                <small style="color: #888; font-size: 11px;">Only needed for duplicates</small>
+                            </div>
+                            <div>
+                                <button onclick="addCircle21Athlete()" style="padding: 10px 20px; background: #008AC2; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: 600;">
+                                    Add Athlete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 30px;">
+                        <h4 style="margin-bottom: 15px;">📋 Currently Tracked Athletes (<span id="circle21-count">0</span>)</h4>
+                        <div id="circle21-athletes-list" style="max-height: 500px; overflow-y: auto;">
+                            <p style="color: #888; text-align: center; padding: 20px;">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <h3>ℹ️ About Circle21 Tracking</h3>
+                    <ul>
+                        <li><strong>Auto-sync:</strong> GitHub Actions syncs every 20 minutes automatically</li>
+                        <li><strong>Identifier field:</strong> Use age (e.g., <code>31</code>) or partial user_id (e.g., <code>70fe83b7</code>) to distinguish duplicates</li>
+                        <li><strong>Check before adding:</strong> Use <code>python3 check_athlete.py "Name" M/F</code> to verify athlete exists</li>
+                        <li><strong>Changes take effect:</strong> Next sync will use the updated list from Firebase</li>
+                        <li><strong>Fallback:</strong> If Firebase fails, script uses hardcoded list as backup</li>
+                    </ul>
+                </div>
+            </div>
         </div>
         
         <div id="firebase-status" style="text-align: center; padding: 10px 5px; font-size: 11px; color: #666; border-top: 1px solid #333;">
@@ -1016,6 +1071,7 @@
             // Show/hide content
             document.getElementById('config-tab').style.display = tabName === 'config' ? 'block' : 'none';
             document.getElementById('manage-tab').style.display = tabName === 'manage' ? 'block' : 'none';
+            document.getElementById('circle21-tab').style.display = tabName === 'circle21' ? 'block' : 'none';
             document.getElementById('export-tab').style.display = tabName === 'export' ? 'block' : 'none';
             document.getElementById('history-tab').style.display = tabName === 'history' ? 'block' : 'none';
 
@@ -1024,6 +1080,10 @@
                 displayAthleteList();
             } else if (tabName === 'history') {
                 displayActivityLog();
+            } else if (tabName === 'circle21') {
+                if (window.loadCircle21TrackedAthletes) {
+                    loadCircle21TrackedAthletes();
+                }
             }
         }
         // Initialize Firebase and load data on page load
