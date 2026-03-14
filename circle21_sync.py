@@ -13,12 +13,20 @@ from datetime import datetime
 # CONFIGURATION
 # ====================
 
-# Athletes to track - format: ("Name", "Gender")
-# Gender: "M" for Male, "F" for Female  
+# Athletes to track - format: ("Name", "Gender", optional_identifier)
+# Gender: "M" for Male, "F" for Female
+# Optional identifier: Can be age (int), or partial user_id (str) to resolve duplicates
 ATHLETES_TO_TRACK = [
     ("Bastian Broecker", "M"),
     ("Thomas Reppa", "M"),
     ("Mathias Edfelder", "M"),
+    ("Philipp Singer", "M"),
+    ("Daniel Kerscher", "M"),
+    ("Julian Huber", "M"),
+    ("Juliane Hauffe", "F"),
+    ("Birgit Geißinger", "F"),
+    ("Tom Otto", "M", "70fe83b7"),  # Partial user_id to select the top-ranked Tom Otto
+    ("Lydia K", "F"),
     # Add more athletes here...
 ]
 
@@ -33,7 +41,7 @@ CIRCLE21_API = {
     "base_url": "https://api.circle21.events/api/leaderboard",
     "competition_id": "ca492eb3-516d-445b-8093-66b3df1c6465",
     "division_male": "5b561478-69cb-435d-b090-53513293c22f",
-    "division_female": "TBD",  # TODO: Get female division ID
+    "division_female": "6546e368-3f42-4c98-a42e-eb220486c81e",  # TODO: Get female division ID
     "bearer_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI5ODlmMDRjZC1iNWRhLTQ2ZTUtOTg0Yy1kYjU3YmIxOWNlZjIiLCJqdGkiOiJmZDE1NzM3MDM2YTczYWIyZTY4MjAyNmQ4YmJiMzdlNDVhNjY0YjlkZmM5YzI5YmFjZWFlMGIzNzZhYTdjZjM0ODZhZGM2ODhlYThmZmMyNiIsImlhdCI6MTc3Mjk4NjU5MC44NzI1MiwibmJmIjoxNzcyOTg2NTkwLjg3MjUyMywiZXhwIjoxODA0NTIyNTkwLjg2NjUzNywic3ViIjoiMzA1Y2M1ZGItMGNmMS00MzFiLThjYzktYjg5MWFiOWQwMzNmIiwic2NvcGVzIjpbXX0.qTGPTD2SmVhihQgeX_yYEjNXU8wuyXJOrm9OliEbWNUf48LoY1xRONGjtIQPbdVdk-7Ye2kpvyNOfdrT7N8dKCWPIht9wLXafasFGF4qRrdD-EPxPuR6Ygxvu-tmlrDEbTj9mF94bucWuil83cXfAVAYrTyGITa-mK26bPIBHGC-Wbk0VJzDGL9a4oiQEo_RDHyh3MOrkA_iralEStNYfdZ-jF8nJVsPkeWVcPYnyZK1Ar0NuIFD0yIEhGbaJKbZu8RoJDgFwAk2aRyrAhVSc1cRg6tF49VAISJAk-KGJr4Bs7Yw7rop89dOVdzh-ZeyqLvdMR4tpQzpt8t7Y6KSXl9Rmq9OYuOThfavvqir5CqCQmYWixy2yrXHwcqhBcVk0SvajUmRuKrDyqPrcv5xWFQjcDD_rYFPj355FQoZDmbqyhsp2P7NRMlXdCjWtwInnOQ2q1zGKnaXATkD1yHMD_C3bTqlxLLQy2odTQmX9U6Ggp8B6ZEvyL2GICEL7ZFT427M3O0WJhDSPRpR2w9K1bIyoRGzPy2t_aOfLwqoD3x-PxljIfB1O6hxbf1kSz3oeWjVvBkTm48V48v2fwgfubSiclm8hLn3wHErSj_u4LY8gQR42DSKGDHpSZVw8W0TNQ8RGTcwOs5WDnlh0FG5WAWc1CWXBvTVlSkXF3IIb6M"
 }
 
@@ -105,39 +113,139 @@ def calculate_workout_rank(athlete_id, wod_data):
     return rank
 
 
-def find_athlete_data(athlete_name, gender, leaderboard_data):
-    """Find athlete in leaderboard and extract all placement data"""
+def calculate_overall_rank(leaderboard_data, athlete_id, athlete_score):
+    """Calculate overall rank based on Circle21 rules (sum of best 4 workouts)
+    
+    Args:
+        leaderboard_data: Full API response
+        athlete_id: ID of the athlete to rank
+        athlete_score: Sum of best 4 workout placements
+        
+    Returns:
+        Overall rank (1-based)
+    """
+    # Calculate scores for all athletes
+    athlete_scores = []
+    
+    for athlete in leaderboard_data.get('athletes', []):
+        other_id = athlete['id']
+        
+        # Get all workout placements for this athlete
+        placements = []
+        for wod in leaderboard_data.get('wods', []):
+            rank = calculate_workout_rank(other_id, wod)
+            if rank is not None:
+                placements.append(rank)
+        
+        # Calculate score (sum of best 4)
+        if len(placements) >= 4:
+            best_4 = sorted(placements)[:4]
+            score = sum(best_4)
+        else:
+            # Not enough workouts - penalty score
+            score = 999999
+        
+        athlete_scores.append((other_id, score))
+    
+    # Sort by score (lower is better)
+    athlete_scores.sort(key=lambda x: x[1])
+    
+    # Find rank (1-based)
+    for rank, (other_id, score) in enumerate(athlete_scores, 1):
+        if other_id == athlete_id:
+            return rank
+    
+    return None
+
+
+def find_athlete_data(athlete_name, gender, leaderboard_data, identifier=None):
+    """Find athlete in leaderboard and extract all placement data
+    
+    Args:
+        athlete_name: Name of the athlete
+        gender: M or F
+        leaderboard_data: API response data
+        identifier: Optional - can be age (int) or partial user_id (str) to resolve duplicates
+    """
     if not leaderboard_data:
         return None
     
-    # Find athlete in athletes list
-    # NOTE: The athletes array from Circle21 API is already sorted by rank
-    # The array position (+1) IS the overall ranking
-    athlete_info = None
-    overall_rank = None
+    # Find all athletes matching the name
+    matching_athletes = []
     
-    for i, athlete in enumerate(leaderboard_data.get('athletes', [])):
+    for athlete in leaderboard_data.get('athletes', []):
         if athlete.get('name', '').lower() == athlete_name.lower():
-            athlete_info = athlete
-            overall_rank = i + 1  # Array index + 1 = rank
-            break
+            matching_athletes.append(athlete)
     
-    if not athlete_info:
+    if not matching_athletes:
         return None
+    
+    # Handle duplicates
+    if len(matching_athletes) > 1:
+        print(f"   ⚠️  DUPLICATE: Found {len(matching_athletes)} athletes named '{athlete_name}':")
+        for ath in matching_athletes:
+            print(f"      Age {ath.get('age')} - {ath.get('club_name')} - {ath.get('points')} pts - UserID: {ath.get('user_id')[:8]}...")
+        
+        # Try to resolve with identifier
+        if identifier:
+            selected = None
+            if isinstance(identifier, int):  # Age-based selection
+                for ath in matching_athletes:
+                    if ath.get('age') == identifier:
+                        selected = ath
+                        print(f"   ✅ Selected by age {identifier}")
+                        break
+            elif isinstance(identifier, str):  # User ID-based selection
+                for ath in matching_athletes:
+                    if identifier.lower() in ath.get('user_id', '').lower():
+                        selected = ath
+                        print(f"   ✅ Selected by user_id '{identifier}'")
+                        break
+            
+            if selected:
+                athlete_info = selected
+            else:
+                print(f"   ❌ Identifier '{identifier}' didn't match any duplicate - using first")
+                athlete_info = matching_athletes[0]
+        else:
+            # No identifier - use first match and warn
+            athlete_info = matching_athletes[0]
+            print(f"   ⚠️  No identifier provided - defaulting to first match")
+            print(f"      To specify which one, add identifier: (\"{athlete_name}\", \"{gender}\", age_or_userid)")
+    else:
+        # Single match - no ambiguity
+        athlete_info = matching_athletes[0]
     
     athlete_id = athlete_info['id']
     
-    # Get workout rankings
+    # Get workout placements
     workouts = {}
     for wod in leaderboard_data.get('wods', []):
         wod_name = wod['wod']['name']
         rank = calculate_workout_rank(athlete_id, wod)
         workouts[wod_name] = rank
     
+    # Calculate overall rank using Circle21 rules:
+    # Sum of BEST 4 workout placements (lower is better)
+    # Athletes with < 4 workouts rank lower than those with 4+
+    completed_workouts = [r for r in workouts.values() if r is not None]
+    
+    if len(completed_workouts) >= 4:
+        # Take best 4 placements (lowest ranks)
+        best_4 = sorted(completed_workouts)[:4]
+        overall_score = sum(best_4)
+    else:
+        # Not enough workouts - give penalty score
+        overall_score = 999999
+    
+    # Calculate actual overall rank by comparing to all athletes
+    overall_rank = calculate_overall_rank(leaderboard_data, athlete_id, overall_score)
+    
     return {
         'name': athlete_name,
         'gender': gender,
         'overall': overall_rank,
+        'overall_score': overall_score,  # Store for debugging
         'workouts': workouts,
         'timestamp': int(datetime.now().timestamp())
     }
@@ -176,9 +284,9 @@ def sync_circle21_data():
         print("⚠️  No athletes configured! Add athletes to ATHLETES_TO_TRACK list.")
         return False
     
-    # Group by gender
-    male_athletes = [name for name, gender in ATHLETES_TO_TRACK if gender == "M"]
-    female_athletes = [name for name, gender in ATHLETES_TO_TRACK if gender == "F"]
+    # Group by gender (handle both 2-tuple and 3-tuple formats)
+    male_athletes = [entry[0] for entry in ATHLETES_TO_TRACK if entry[1] == "M"]
+    female_athletes = [entry[0] for entry in ATHLETES_TO_TRACK if entry[1] == "F"]
     
     # Fetch leaderboards
     print(f"\n🔄 Fetching data from Circle21 API...")
@@ -203,15 +311,26 @@ def sync_circle21_data():
     
     print(f"\n🔍 Processing athletes...")
     
-    for name, gender in ATHLETES_TO_TRACK:
+    for entry in ATHLETES_TO_TRACK:
+        # Support both old format (name, gender) and new format (name, gender, identifier)
+        if len(entry) == 2:
+            name, gender = entry
+            identifier = None
+        elif len(entry) == 3:
+            name, gender, identifier = entry
+        else:
+            print(f"   ❌ Invalid entry format: {entry}")
+            continue
+        
         leaderboard_data = male_data if gender == "M" else female_data
         
-        athlete_data = find_athlete_data(name, gender, leaderboard_data)
+        athlete_data = find_athlete_data(name, gender, leaderboard_data, identifier)
         
         if athlete_data:
             athletes_found.append(athlete_data)
             workouts_completed = sum(1 for v in athlete_data['workouts'].values() if v is not None)
-            print(f"   ✅ {name} ({gender}) - Overall: #{athlete_data['overall']} | {workouts_completed}/6 workouts")
+            score_info = f" (score: {athlete_data['overall_score']})" if athlete_data.get('overall_score', 999999) < 999999 else " (incomplete)"
+            print(f"   ✅ {name} ({gender}) - Overall: #{athlete_data['overall']}{score_info} | {workouts_completed}/6 workouts")
         else:
             athletes_not_found.append((name, gender))
             print(f"   ❌ {name} ({gender}) - Not found")

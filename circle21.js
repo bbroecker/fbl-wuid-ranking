@@ -232,12 +232,19 @@ function displayCircle21Leaderboard() {
     if (!container) return;
     
     const genderFilterEl = document.getElementById('circle21GenderFilter');
-    const genderFilter = genderFilterEl ? genderFilterEl.value : 'M';
+    const genderFilter = genderFilterEl ? genderFilterEl.value : '';
+    
+    // Check if no gender selected
+    if (!genderFilter || genderFilter === '') {
+        container.innerHTML = '<p style="text-align: center; color: #999; padding: 80px 40px; font-size: 16px;">👆 Please select a gender above to view the leaderboard</p>';
+        return;
+    }
     
     let athletes = getAllCircle21Athletes().filter(a => a.gender === genderFilter);
     
     if (athletes.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #999; padding: 80px 40px;">No athletes added yet.<br><small>Admin can add athletes by running the <code>circle21_sync.py</code> script.</small></p>';
+        const genderName = genderFilter === 'M' ? 'male' : 'female';
+        container.innerHTML = `<p style="text-align: center; color: #999; padding: 80px 40px;">No ${genderName} athletes added yet.<br><small>Admin can add athletes by running the <code>circle21_sync.py</code> script.</small></p>`;
         return;
     }
     

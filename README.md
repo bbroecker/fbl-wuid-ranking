@@ -344,21 +344,60 @@ circle21_sync.py → Circle21 API → Firebase /circle21 → Website Display
 - ✅ **Sortable Leaderboard:** Click column headers to sort
 - ✅ **Gender Filtering:** Separate Male/Female divisions
 - ✅ **Multi-Workout Tracking:** 6 workouts (LQ1-LQ6) tracked per athlete
+- ✅ **Competition Context:** Displays total competitor count (e.g., "Tracking 3 athletes out of 987 total competitors")
+- ✅ **Automated Sync:** Optional 15-minute auto-sync via cron job
 
 ### Running the Sync
 
-**Manual sync:**
+**Manual sync (run once):**
 ```bash
 python3 circle21_sync.py
 ```
 
-**Automatic sync (cron):**
+**Auto-sync while PC is on (recommended for manual control):**
+
+Start a loop that syncs every 20 minutes:
+```bash
+./run_sync_loop.sh
+```
+
+- Runs immediately, then every 20 minutes
+- Shows countdown to next sync
+- Press **Ctrl+C** to stop
+- Logs saved to `circle21_sync.log`
+
+**Auto-sync with cron (runs in background always):**
+
+For automatic sync even when terminal is closed:
+
+1. **Setup (one-time):**
+   ```bash
+   ./setup_auto_sync.sh
+   ```
+
+2. **Verify it's running:**
+   ```bash
+   crontab -l | grep circle21
+   ```
+
+3. **View sync logs:**
+   ```bash
+   tail -f circle21_sync.log
+   ```
+
+4. **To remove automatic sync:**
+   ```bash
+   crontab -e
+   # Delete the line containing "circle21_sync.py"
+   ```
+
+**Alternative manual cron setup:**
 ```bash
 # Edit crontab
 crontab -e
 
-# Add this line to sync every hour:
-0 * * * * cd /path/to/fbl_wuid_internal_ranking && python3 circle21_sync.py >> /tmp/circle21.log 2>&1
+# Add this line to sync every 15 minutes:
+*/15 * * * * cd /path/to/fbl_wuid_internal_ranking && python3 circle21_sync.py >> circle21_sync.log 2>&1
 ```
 
 ### Data Structure
