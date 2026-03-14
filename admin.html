@@ -431,45 +431,6 @@
             color: #999;
         }
 
-        /* Circle21 athlete list styles */
-        .circle21-athlete-card {
-            background: #2a2a2a;
-            border: 1px solid #444;
-            border-radius: 10px;
-            padding: 15px 20px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.3s;
-        }
-
-        .circle21-athlete-card:hover {
-            background: #333;
-            border-color: #008AC2;
-        }
-
-        .circle21-athlete-info {
-            flex: 1;
-        }
-
-        .circle21-athlete-name {
-            color: #fff;
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .circle21-athlete-stats {
-            color: #999;
-            font-size: 13px;
-        }
-
-        .circle21-athlete-actions {
-            display: flex;
-            gap: 10px;
-        }
-
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 1.5em;
@@ -527,7 +488,6 @@
             <button class="tab" onclick="showTab('manage')">👥 Manage Athletes</button>
             <button class="tab" onclick="showTab('export')">💾 Data Management</button>
             <button class="tab" onclick="showTab('history')">📊 Activity Log</button>
-            <button class="tab" onclick="showTab('circle21')">🏆 Circle21 Tracking</button>
         </div>
 
         <div class="content">
@@ -861,98 +821,6 @@
                         <li><strong>Synced:</strong> Activity log syncs across all devices via Firebase</li>
                         <li><strong>Privacy:</strong> Only admins can view the activity log</li>
                     </ul>
-                </div>
-            </div>
-
-            <!-- CIRCLE21 TRACKING TAB -->
-            <div id="circle21-tab" class="tab-content" style="display: none;">
-                <div class="section">
-                    <h3>🏆 Circle21 Competition Tracking</h3>
-                    <p style="color: #ccc; margin-bottom: 20px;">Track your athletes' placements in the Circle21 Fitness Bundesliga 2026 Local Qualifier.</p>
-                    
-                    <div class="form-section">
-                        <h4>Add/Edit Athlete</h4>
-                        
-                        <div class="input-row">
-                            <div class="filter-group">
-                                <label>Athlete Name *</label>
-                                <input type="text" id="circle21-athlete-name" placeholder="e.g., Bastian Broecker">
-                            </div>
-                            
-                            <div class="filter-group">
-                                <label>Gender *</label>
-                                <select id="circle21-gender">
-                                    <option value="M">Male (M)</option>
-                                    <option value="F">Female (F)</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="input-row">
-                            <div class="filter-group">
-                                <label>Overall Placement *</label>
-                                <input type="number" id="circle21-overall" placeholder="e.g., 42" min="1">
-                            </div>
-                        </div>
-                        
-                        <div class="input-row">
-                            <div class="filter-group">
-                                <label>LQ1 Placement</label>
-                                <input type="number" id="circle21-lq1" placeholder="Placement" min="1">
-                            </div>
-                            
-                            <div class="filter-group">
-                                <label>LQ2 Placement</label>
-                                <input type="number" id="circle21-lq2" placeholder="Placement" min="1">
-                            </div>
-                            
-                            <div class="filter-group">
-                                <label>LQ3 Placement</label>
-                                <input type="number" id="circle21-lq3" placeholder="Placement" min="1">
-                            </div>
-                        </div>
-                        
-                        <div class="input-row">
-                            <div class="filter-group">
-                                <label>LQ4 Placement</label>
-                                <input type="number" id="circle21-lq4" placeholder="Placement" min="1">
-                            </div>
-                            
-                            <div class="filter-group">
-                                <label>LQ5 Placement</label>
-                                <input type="number" id="circle21-lq5" placeholder="Placement" min="1">
-                            </div>
-                            
-                            <div class="filter-group">
-                                <label>LQ6 Placement</label>
-                                <input type="number" id="circle21-lq6" placeholder="Placement" min="1">
-                            </div>
-                        </div>
-                        
-                        <div style="margin-top: 20px;">
-                            <button class="btn btn-primary" onclick="saveCircle21Athlete()">Save Athlete</button>
-                            <button class="btn btn-secondary" onclick="clearCircle21Form()">Clear Form</button>
-                        </div>
-                    </div>
-                    
-                    <div class="section" style="margin-top: 30px;">
-                        <h4>Current Athletes</h4>
-                        <div id="circle21-athletes-list" style="margin-top: 15px;">
-                            <!-- Populated dynamically -->
-                        </div>
-                    </div>
-                    
-                    <div class="info-section">
-                        <h3>ℹ️ About Circle21 Tracking</h3>
-                        <ul>
-                            <li><strong>How to use:</strong> Manually enter athlete placements from the Circle21 website</li>
-                            <li><strong>Website:</strong> <a href="https://circle21.events/fitness-bundesliga-2026-local-qualifier?tab=leaderboard" target="_blank" style="color: #008AC2;">Circle21 Competition Page</a></li>
-                            <li><strong>Separate leaderboards:</strong> Male and Female divisions have separate rankings</li>
-                            <li><strong>Overall placement:</strong> Used for default sorting in the leaderboard</li>
-                            <li><strong>Workout placements:</strong> Click column headers to sort by individual workouts</li>
-                            <li><strong>Data storage:</strong> Stored separately from internal leaderboard data</li>
-                        </ul>
-                    </div>
                 </div>
             </div>
         </div>
