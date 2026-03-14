@@ -470,50 +470,6 @@
                 padding: 10px 8px;
             }
         }
-
-        /* Circle21 Athlete Cards */
-        .circle21-athlete-card {
-            background: #2a2a2a;
-            border: 1px solid #444;
-            border-radius: 10px;
-            padding: 15px 20px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.2s;
-        }
-
-        .circle21-athlete-card:hover {
-            border-color: #2196F3;
-            background: #2a2a3a;
-        }
-
-        .circle21-athlete-info {
-            flex: 1;
-        }
-
-        .circle21-athlete-name {
-            font-size: 16px;
-            font-weight: bold;
-            color: #fff;
-            margin-bottom: 5px;
-        }
-
-        .circle21-athlete-stats {
-            font-size: 13px;
-            color: #999;
-        }
-
-        .circle21-athlete-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .circle21-athlete-actions .btn {
-            padding: 8px 16px;
-            font-size: 13px;
-        }
     </style>
 </head>
 <body>
@@ -532,7 +488,6 @@
             <button class="tab" onclick="showTab('manage')">👥 Manage Athletes</button>
             <button class="tab" onclick="showTab('export')">💾 Data Management</button>
             <button class="tab" onclick="showTab('history')">📊 Activity Log</button>
-            <button class="tab" onclick="showTab('circle21')">🏆 Circle21 Tracking</button>
         </div>
 
         <div class="content">
@@ -868,71 +823,6 @@
                     </ul>
                 </div>
             </div>
-
-            <!-- CIRCLE21 TRACKING TAB -->
-            <div id="circle21-tab" class="tab-content" style="display: none;">
-                <div class="form-section">
-                    <h3>🏆 Circle21 Competition Tracking</h3>
-                    <p style="color: #999; margin-bottom: 20px;">Track your athletes' performance in the Fitness Bundesliga 2026 - Local Qualifier.</p>
-                    
-                    <div style="margin: 20px 0; padding: 20px; background: #1a2a3a; border-radius: 8px; border-left: 4px solid #2196F3;">
-                        <h4 style="color: #64b5f6; margin-top: 0;">⚙️ How to Update Circle21 Data</h4>
-                        <p style="color: #ccc; margin-bottom: 15px;">Since Circle21 doesn't provide a public API, use manual data entry:</p>
-                        <ol style="color: #ccc; line-height: 1.8;">
-                            <li>Check athlete placements on <a href="https://circle21.events/fitness-bundesliga-2026-local-qualifier?tab=leaderboard" target="_blank" style="color: #64b5f6;">Circle21 Leaderboard</a></li>
-                            <li>Open <code>circle21_sync_manual.py</code> in a text editor</li>
-                            <li>Update the <code>ATHLETES_DATA</code> list with current placements:
-                                <pre style="background: #0a0a0a; padding: 10px; border-radius: 5px; margin: 10px 0; overflow-x: auto;"><code>ATHLETES_DATA = [
-    {
-        "name": "Bastian Broecker",
-        "gender": "M",  # "M" or "F"
-        "overall": 42,
-        "workouts": {
-            "LQ1": 38,
-            "LQ2": 45,
-            "LQ3": None,  # None if not competed yet
-            "LQ4": None,
-            "LQ5": None,
-            "LQ6": None,
-        }
-    },
-    # Add more athletes here...
-]</code></pre>
-                            </li>
-                            <li>Save the file</li>
-                            <li>Run the sync script:
-                                <pre style="background: #0a0a0a; padding: 10px; border-radius: 5px; margin: 10px 0;"><code>python3 circle21_sync_manual.py</code></pre>
-                            </li>
-                            <li>Data automatically updates in Firebase and appears on the website!</li>
-                        </ol>
-                        <p style="color: #999; margin: 10px 0; font-size: 13px;">
-                            <strong>💡 Tip:</strong> Run the script after each Circle21 workout to keep data current.
-                        </p>
-                        <p style="color: #999; margin: 10px 0; font-size: 13px;">
-                            <strong>⚡ Want automation?</strong> Implement HTML scraping with BeautifulSoup or contact Circle21 for API access. See <code>circle21_sync.py</code> for starter code.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h4>📊 Currently Synced Athletes</h4>
-                    <p style="color: #999; margin-bottom: 15px;">Athletes currently tracked in Firebase. Edit the Python script and re-run to add/remove athletes.</p>
-                    <div id="circle21-athletes-list"></div>
-                </div>
-
-                <div class="info-box">
-                    <h3>ℹ️ About Circle21 Tracking</h3>
-                    <ul>
-                        <li><strong>Competition:</strong> Fitness Bundesliga 2026 - Local Qualifier hosted by Circle21</li>
-                        <li><strong>Official Leaderboard:</strong> <a href="https://circle21.events/fitness-bundesliga-2026-local-qualifier?tab=leaderboard" target="_blank">View on Circle21</a></li>
-                        <li><strong>Data Entry:</strong> Manual - Update placements in <code>circle21_sync_manual.py</code></li>
-                        <li><strong>Update Method:</strong> Run <code>python3 circle21_sync_manual.py</code> after each workout</li>
-                        <li><strong>Add Athletes:</strong> Add entry to <code>ATHLETES_DATA</code> and run script</li>
-                        <li><strong>Remove Athletes:</strong> Delete entry and re-run script - they'll be removed from Firebase</li>
-                        <li><strong>Public Display:</strong> Athletes appear on the main Circle21 Leaderboard tab</li>
-                    </ul>
-                </div>
-            </div>
         </div>
         
         <div id="firebase-status" style="text-align: center; padding: 10px 5px; font-size: 11px; color: #666; border-top: 1px solid #333;">
@@ -1127,15 +1017,12 @@
             document.getElementById('manage-tab').style.display = tabName === 'manage' ? 'block' : 'none';
             document.getElementById('export-tab').style.display = tabName === 'export' ? 'block' : 'none';
             document.getElementById('history-tab').style.display = tabName === 'history' ? 'block' : 'none';
-            document.getElementById('circle21-tab').style.display = tabName === 'circle21' ? 'block' : 'none';
 
             // Load data for the tab
             if (tabName === 'manage') {
                 displayAthleteList();
             } else if (tabName === 'history') {
                 displayActivityLog();
-            } else if (tabName === 'circle21') {
-                displayCircle21AthletesList();
             }
         }
         // Initialize Firebase and load data on page load
