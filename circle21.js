@@ -53,8 +53,9 @@ function setupCircle21FirebaseListener() {
                     metadata: circle21Metadata
                 }));
                 
-                // Update displays
-                if (typeof displayCircle21AthletesList === 'function') {
+                // Update displays (only on user pages, not admin)
+                const isAdminPage = document.getElementById('circle21-athlete-name');
+                if (!isAdminPage && typeof displayCircle21AthletesList === 'function') {
                     displayCircle21AthletesList();
                 }
                 if (typeof displayCircle21Leaderboard === 'function') {
@@ -353,17 +354,22 @@ function initializeCircle21Module() {
     // Setup Firebase listener for Circle21 data (separate path)
     setupCircle21FirebaseListener();
     
-    // Initial display
-    if (document.getElementById('circle21-athletes-list')) {
-        displayCircle21AthletesList();
-    }
-    if (document.getElementById('circle21-leaderboard-display')) {
-        displayCircle21Leaderboard();
-    }
+    // Detect if we're on admin page or user page
+    const isAdminPage = document.getElementById('circle21-athlete-name');
     
-    // Load tracked athletes list for admin panel
-    if (document.getElementById('circle21-athletes-list')) {
-        loadCircle21TrackedAthletes();
+    if (isAdminPage) {
+        // Admin panel: show config list with add/remove buttons
+        if (document.getElementById('circle21-athletes-list')) {
+            loadCircle21TrackedAthletes();
+        }
+    } else {
+        // User page: show leaderboard with scores
+        if (document.getElementById('circle21-athletes-list')) {
+            displayCircle21AthletesList();
+        }
+        if (document.getElementById('circle21-leaderboard-display')) {
+            displayCircle21Leaderboard();
+        }
     }
     
     console.log('Circle21: Module initialized');
