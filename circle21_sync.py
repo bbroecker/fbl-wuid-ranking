@@ -272,6 +272,44 @@ def find_athlete_data(athlete_name, gender, leaderboard_data, identifier=None):
     }
 
 
+def fetch_athletes_from_firebase():
+    """Fetch athlete list from Firebase config
+    
+    Returns:
+        List of tuples in format: (name, gender, identifier) or (name, gender)
+        Returns None if not found or on error
+    """
+    firebase_url = f"{FIREBASE_CONFIG['databaseURL']}/circle21/config/athletes_to_track.json?auth={FIREBASE_CONFIG['apiKey']}"
+    
+    try:
+        req = urllib.request.Request(firebase_url)
+        with urllib.request.urlopen(req, timeout=10) as response:
+            data = json.loads(response.read().decode())
+            
+            if not data:
+                return None
+            
+            # Convert dict format back to tuples
+            athletes_list = []
+            for athlete in data:
+                if athlete.get('identifier'):
+                    # Try to convert to int if it's a numeric string
+                    identifier = athlete['identifier']
+                    try:
+                        identifier = int(identifier)
+                    except (ValueError, TypeError):
+                        pass
+                    athletes_list.append((athlete['name'], athlete['gender'], identifier))
+                else:
+                    athletes_list.append((athlete['name'], athlete['gender']))
+            
+            return athletes_list
+    
+    except Exception as e:
+        # Silently fail - will use fallback
+        return None
+
+
 def update_firebase(athletes_data):
     """Update Firebase Realtime Database with athlete data"""
     firebase_url = f"{FIREBASE_CONFIG['databaseURL']}/circle21.json?auth={FIREBASE_CONFIG['apiKey']}"
@@ -299,15 +337,26 @@ def sync_circle21_data():
     print("\n" + "="*60)
     print("🏆 Circle21 Sync Script")
     print("="*60)
-    print(f"\n📋 Athletes to track: {len(ATHLETES_TO_TRACK)}")
     
-    if not ATHLETES_TO_TRACK:
-        print("⚠️  No athletes configured! Add athletes to ATHLETES_TO_TRACK list.")
+    # Try to fetch athletes from Firebase first
+    print(f"\n📥 Checking for athlete list in Firebase...")
+    athletes_to_track = fetch_athletes_from_firebase()
+    
+    if athletes_to_track:
+        print(f"✅ Using athlete list from Firebase ({len(athletes_to_track)} athletes)")
+    else:
+        print(f"⚠️  No athletes in Firebase, using hardcoded list")
+        athletes_to_track = ATHLETES_TO_TRACK
+    
+    print(f"📋 Athletes to track: {len(athletes_to_track)}")
+    
+    if not athletes_to_track:
+        print("⚠️  No athletes configured! Add athletes to Firebase or ATHLETES_TO_TRACK list.")
         return False
     
     # Group by gender (handle both 2-tuple and 3-tuple formats)
-    male_athletes = [entry[0] for entry in ATHLETES_TO_TRACK if entry[1] == "M"]
-    female_athletes = [entry[0] for entry in ATHLETES_TO_TRACK if entry[1] == "F"]
+    male_athletes = [entry[0] for entry in athletes_to_track if entry[1] == "M"]
+    female_athletes = [entry[0] for entry in athletes_to_track if entry[1] == "F"]
     
     # Fetch leaderboards
     print(f"\n🔄 Fetching data from Circle21 API...")
@@ -332,7 +381,7 @@ def sync_circle21_data():
     
     print(f"\n🔍 Processing athletes...")
     
-    for entry in ATHLETES_TO_TRACK:
+    for entry in athletes_to_track:
         # Support both old format (name, gender) and new format (name, gender, identifier)
         if len(entry) == 2:
             name, gender = entry

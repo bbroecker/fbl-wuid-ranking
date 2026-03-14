@@ -1,0 +1,36 @@
+name: Circle21 Auto Sync
+
+on:
+  # Run every 20 minutes
+  schedule:
+    - cron: '*/20 * * * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Run Circle21 Sync
+        run: |
+          cd fbl_wuid_internal_ranking
+          python3 circle21_sync.py
+        env:
+          # No environment variables needed - credentials are in the script
+          PYTHONUNBUFFERED: 1
+      
+      - name: Log sync completion
+        if: always()
+        run: |
+          echo "Sync completed at $(date)"
+          echo "Exit code: $?"
