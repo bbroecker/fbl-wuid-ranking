@@ -27,7 +27,7 @@ function setupCircle21FirebaseListener() {
     }
     
     try {
-        const circle21Ref = window.database.ref('circle21');
+        const circle21Ref = window.database.ref('circle21/leaderboard');
         circle21Ref.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
@@ -118,10 +118,10 @@ function saveAllCircle21Athletes(athletes) {
     // Save to localStorage
     localStorage.setItem(CIRCLE21_STORAGE_KEY, JSON.stringify(athletes));
     
-    // Save to Firebase (separate path: /circle21)
+    // Save to Firebase (separate path: /circle21/leaderboard)
     if (window.database) {
         try {
-            const circle21Ref = window.database.ref('circle21');
+            const circle21Ref = window.database.ref('circle21/leaderboard');
             circle21Ref.set(athletes).catch(error => {
                 console.error('Circle21: Error saving to Firebase:', error);
             });

@@ -286,8 +286,12 @@ def fetch_athletes_from_firebase():
         with urllib.request.urlopen(req, timeout=10) as response:
             data = json.loads(response.read().decode())
             
-            if not data:
+            if data is None:
                 return None
+            
+            # Empty list is valid (no athletes to track)
+            if isinstance(data, list) and len(data) == 0:
+                return []
             
             # Convert dict format back to tuples
             athletes_list = []
@@ -312,7 +316,7 @@ def fetch_athletes_from_firebase():
 
 def update_firebase(athletes_data):
     """Update Firebase Realtime Database with athlete data"""
-    firebase_url = f"{FIREBASE_CONFIG['databaseURL']}/circle21.json?auth={FIREBASE_CONFIG['apiKey']}"
+    firebase_url = f"{FIREBASE_CONFIG['databaseURL']}/circle21/leaderboard.json?auth={FIREBASE_CONFIG['apiKey']}"
     
     try:
         json_data = json.dumps(athletes_data).encode('utf-8')
