@@ -529,7 +529,14 @@ function removeToast(toast) {
 function showTab(tabName) {
     // Update active tab
     document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-    event.target.classList.add('active');
+    
+    // Find and activate the clicked tab button
+    const buttons = document.querySelectorAll('.tab');
+    buttons.forEach(button => {
+        if (button.getAttribute('onclick') && button.getAttribute('onclick').includes(`'${tabName}'`)) {
+            button.classList.add('active');
+        }
+    });
 
     // Hide all tab content
     document.querySelectorAll('.tab-content').forEach(content => {
@@ -543,7 +550,8 @@ function showTab(tabName) {
         'workout': 'workout-tab',
         'overall': 'overall-tab',
         'manage': 'manage-tab',
-        'export': 'export-tab'
+        'export': 'export-tab',
+        'circle21': 'circle21-tab'
     };
 
     const tabId = tabMapping[tabName];
@@ -557,6 +565,8 @@ function showTab(tabName) {
         displayWorkoutRankings();
     } else if (tabName === 'overall') {
         displayOverallStandings();
+    } else if (tabName === 'circle21') {
+        displayCircle21Leaderboard();
     }
 }
 
@@ -1219,6 +1229,360 @@ function clearAllData() {
             }
         }
     }
+}
+
+// ====================================
+// Circle21 Competition Tracking
+// ====================================
+
+const CIRCLE21_STORAGE_KEY = 'fbl-circle21-athletes';
+let circle21Cache = [];
+
+// Circle21 data structure: { name, gender, overall, workouts: {LQ1, LQ2, LQ3, LQ4, LQ5, LQ6}, timestamp }
+
+// Get all Circle21 athletes
+function getAllCircle21Athletes() {
+    if (database && circle21Cache && circle21Cache.length > 0) {
+        return circle21Cache;
+    }
+    const stored = localStorage.getItem(CIRCLE21_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+}
+
+// Save all Circle21 athletes
+function saveAllCircle21Athletes(athletes) {
+    localStorage.setItem(CIRCLE21_STORAGE_KEY, JSON.stringify(athletes));
+    
+    if (database) {
+        const circle21Ref = window.firebase.database().ref('circle21');
+        circle21Ref.set(athletes).catch(error => {
+            console.error('Error saving to Firebase:', error);
+        });
+    }
+}
+
+// Fetch athlete data from Circle21 website (via proxy server)
+async function fetchCircle21Data(athleteName, gender) {
+    const statusEl = document.getElementById('circle21-fetch-status');
+    const fetchBtn = document.getElementById('fetch-circle21-btn');
+    
+    if (!athleteName || athleteName.trim() === '') {
+        if (statusEl) statusEl.textContent = '⚠️ Please enter an athlete name first';
+        return;
+    }
+    
+    if (statusEl) statusEl.textContent = '🔄 Fetching data from Circle21...';
+    if (fetchBtn) fetchBtn.disabled = true;
+    
+    try {
+        // Fetch via proxy server (bypasses CORS)
+        const proxyUrl = `http://localhost:8002/fetch-athlete?name=${encodeURIComponent(athleteName)}&gender=${gender}`;
+        
+        const response = await fetch(proxyUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.message || data.error);
+        }
+        
+        if (data.found) {
+            // Populate the form with fetched data
+            document.getElementById('circle21-overall').value = data.overall || '';
+            document.getElementById('circle21-lq1').value = data.workouts?.LQ1 || '';
+            document.getElementById('circle21-lq2').value = data.workouts?.LQ2 || '';
+            document.getElementById('circle21-lq3').value = data.workouts?.LQ3 || '';
+            document.getElementById('circle21-lq4').value = data.workouts?.LQ4 || '';
+            document.getElementById('circle21-lq5').value = data.workouts?.LQ5 || '';
+            document.getElementById('circle21-lq6').value = data.workouts?.LQ6 || '';
+            
+            if (statusEl) statusEl.textContent = '✅ Data fetched successfully! Review and save.';
+        } else {
+            if (statusEl) statusEl.textContent = `⚠️ Athlete "${athleteName}" not found in ${gender === 'M' ? 'Male' : 'Female'} division.`;
+        }
+    } catch (error) {
+        console.error('Circle21 fetch failed:', error);
+        if (statusEl) {
+            statusEl.innerHTML = `⚠️ Auto-fetch failed: ${error.message}<br><small>Make sure the proxy server is running: <code>python3 circle21_proxy.py</code></small>`;
+        }
+    } finally {
+        if (fetchBtn) fetchBtn.disabled = false;
+    }
+}
+
+// Save/Update Circle21 athlete
+function saveCircle21Athlete() {
+    const name = document.getElementById('circle21-athlete-name').value.trim();
+    const gender = document.getElementById('circle21-gender').value;
+    const overall = parseInt(document.getElementById('circle21-overall').value);
+    
+    if (!name) {
+        showStatus('Please enter athlete name');
+        return;
+    }
+    
+    if (!overall || overall < 1) {
+        showStatus('Please enter valid overall placement (must be > 0)');
+        return;
+    }
+    
+    const athlete = {
+        name: name,
+        gender: gender,
+        overall: overall,
+        workouts: {
+            LQ1: parseInt(document.getElementById('circle21-lq1').value) || null,
+            LQ2: parseInt(document.getElementById('circle21-lq2').value) || null,
+            LQ3: parseInt(document.getElementById('circle21-lq3').value) || null,
+            LQ4: parseInt(document.getElementById('circle21-lq4').value) || null,
+            LQ5: parseInt(document.getElementById('circle21-lq5').value) || null,
+            LQ6: parseInt(document.getElementById('circle21-lq6').value) || null
+        },
+        timestamp: Date.now()
+    };
+    
+    let athletes = getAllCircle21Athletes();
+    const existingIndex = athletes.findIndex(a => a.name === name && a.gender === gender);
+    
+    if (existingIndex >= 0) {
+        athletes[existingIndex] = athlete;
+        showStatus(`Updated ${name}`);
+    } else {
+        athletes.push(athlete);
+        showStatus(`Added ${name}`);
+    }
+    
+    saveAllCircle21Athletes(athletes);
+    clearCircle21Form();
+    displayCircle21AthletesList();
+    
+    // Update main leaderboard if visible
+    if (typeof displayCircle21Leaderboard === 'function') {
+        displayCircle21Leaderboard();
+    }
+}
+
+// Clear Circle21 form
+function clearCircle21Form() {
+    document.getElementById('circle21-athlete-name').value = '';
+    document.getElementById('circle21-gender').value = 'M';
+    document.getElementById('circle21-overall').value = '';
+    document.getElementById('circle21-lq1').value = '';
+    document.getElementById('circle21-lq2').value = '';
+    document.getElementById('circle21-lq3').value = '';
+    document.getElementById('circle21-lq4').value = '';
+    document.getElementById('circle21-lq5').value = '';
+    document.getElementById('circle21-lq6').value = '';
+    
+    const statusEl = document.getElementById('circle21-fetch-status');
+    if (statusEl) statusEl.textContent = '';
+}
+
+// Edit Circle21 athlete
+function editCircle21Athlete(name, gender) {
+    const athletes = getAllCircle21Athletes();
+    const athlete = athletes.find(a => a.name === name && a.gender === gender);
+    
+    if (athlete) {
+        document.getElementById('circle21-athlete-name').value = athlete.name;
+        document.getElementById('circle21-gender').value = athlete.gender;
+        document.getElementById('circle21-overall').value = athlete.overall;
+        document.getElementById('circle21-lq1').value = athlete.workouts.LQ1 || '';
+        document.getElementById('circle21-lq2').value = athlete.workouts.LQ2 || '';
+        document.getElementById('circle21-lq3').value = athlete.workouts.LQ3 || '';
+        document.getElementById('circle21-lq4').value = athlete.workouts.LQ4 || '';
+        document.getElementById('circle21-lq5').value = athlete.workouts.LQ5 || '';
+        document.getElementById('circle21-lq6').value = athlete.workouts.LQ6 || '';
+        
+        // Scroll to form
+        document.getElementById('circle21-athlete-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+// Delete Circle21 athlete
+function deleteCircle21Athlete(name, gender) {
+    if (confirm(`Delete ${name} from Circle21 tracking?`)) {
+        let athletes = getAllCircle21Athletes();
+        athletes = athletes.filter(a => !(a.name === name && a.gender === gender));
+        saveAllCircle21Athletes(athletes);
+        showStatus(`Deleted ${name}`);
+        displayCircle21AthletesList();
+        
+        if (typeof displayCircle21Leaderboard === 'function') {
+            displayCircle21Leaderboard();
+        }
+    }
+}
+
+// Display Circle21 athletes list (admin page - read-only)
+function displayCircle21AthletesList() {
+    const container = document.getElementById('circle21-athletes-list');
+    if (!container) return;
+    
+    const athletes = getAllCircle21Athletes();
+    
+    if (athletes.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">No athletes synced yet. Run <code>python3 circle21_sync.py</code> to sync athletes.</p>';
+        return;
+    }
+    
+    // Group by gender
+    const male = athletes.filter(a => a.gender === 'M').sort((a, b) => a.overall - b.overall);
+    const female = athletes.filter(a => a.gender === 'F').sort((a, b) => a.overall - b.overall);
+    
+    let html = '';
+    
+    if (male.length > 0) {
+        html += '<h4>Male Athletes</h4>';
+        male.forEach(athlete => {
+            const workoutCount = Object.values(athlete.workouts).filter(v => v !== null).length;
+            html += `
+                <div class="circle21-athlete-card">
+                    <div class="circle21-athlete-info">
+                        <div class="circle21-athlete-name">${athlete.name}</div>
+                        <div class="circle21-athlete-stats">Overall: #${athlete.overall} | ${workoutCount} workout${workoutCount !== 1 ? 's' : ''}</div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    if (female.length > 0) {
+        if (male.length > 0) html += '<br>';
+        html += '<h4>Female Athletes</h4>';
+        female.forEach(athlete => {
+            const workoutCount = Object.values(athlete.workouts).filter(v => v !== null).length;
+            html += `
+                <div class="circle21-athlete-card">
+                    <div class="circle21-athlete-info">
+                        <div class="circle21-athlete-name">${athlete.name}</div>
+                        <div class="circle21-athlete-stats">Overall: #${athlete.overall} | ${workoutCount} workout${workoutCount !== 1 ? 's' : ''}</div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    html += '<p style="color: #999; margin-top: 20px; font-size: 13px; text-align: center;">💡 To add/remove athletes, edit <code>ATHLETES_TO_TRACK</code> in <code>circle21_sync.py</code> and run the script.</p>';
+    
+    container.innerHTML = html;
+}
+                </div>
+            `;
+        });
+    }
+    
+    if (female.length > 0) {
+        if (male.length > 0) html += '<br>';
+        html += '<h4>Female Athletes</h4>';
+        female.forEach(athlete => {
+            const workoutCount = Object.values(athlete.workouts).filter(v => v !== null).length;
+            html += `
+                <div class="circle21-athlete-card">
+                    <div class="circle21-athlete-info">
+                        <div class="circle21-athlete-name">${athlete.name}</div>
+                        <div class="circle21-athlete-stats">Overall: #${athlete.overall} | ${workoutCount} workout${workoutCount !== 1 ? 's' : ''}</div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    html += '<p style="color: #999; margin-top: 20px; font-size: 13px; text-align: center;">💡 To add/remove athletes, edit <code>ATHLETES_TO_TRACK</code> in <code>circle21_sync.py</code> and run the script.</p>';
+    
+    container.innerHTML = html;
+}
+
+// Display Circle21 leaderboard (main page)
+let circle21SortColumn = 'overall';
+let circle21SortAscending = true;
+
+function displayCircle21Leaderboard() {
+    const container = document.getElementById('circle21-leaderboard-display');
+    if (!container) return;
+    
+    const genderFilter = document.getElementById('circle21GenderFilter').value;
+    let athletes = getAllCircle21Athletes().filter(a => a.gender === genderFilter);
+    
+    if (athletes.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #999; padding: 80px 40px;">No athletes added yet.<br><small>Admin can add athletes in the Admin Panel → Circle21 Tracking tab.</small></p>';
+        return;
+    }
+    
+    // Sort by current column
+    sortCircle21Athletes(athletes, circle21SortColumn, circle21SortAscending);
+    
+    // Build table
+    let html = '<div class="table-container"><table>';
+    html += '<thead><tr>';
+    html += `<th onclick="sortCircle21('overall')" style="cursor: pointer;">Overall ${circle21SortColumn === 'overall' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
+    html += `<th onclick="sortCircle21('name')" style="cursor: pointer;">Name ${circle21SortColumn === 'name' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
+    html += `<th onclick="sortCircle21('LQ1')" style="cursor: pointer;">LQ1 ${circle21SortColumn === 'LQ1' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
+    html += `<th onclick="sortCircle21('LQ2')" style="cursor: pointer;">LQ2 ${circle21SortColumn === 'LQ2' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
+    html += `<th onclick="sortCircle21('LQ3')" style="cursor: pointer;">LQ3 ${circle21SortColumn === 'LQ3' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
+    html += `<th onclick="sortCircle21('LQ4')" style="cursor: pointer;">LQ4 ${circle21SortColumn === 'LQ4' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
+    html += `<th onclick="sortCircle21('LQ5')" style="cursor: pointer;">LQ5 ${circle21SortColumn === 'LQ5' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
+    html += `<th onclick="sortCircle21('LQ6')" style="cursor: pointer;">LQ6 ${circle21SortColumn === 'LQ6' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
+    html += '</tr></thead><tbody>';
+    
+    athletes.forEach((athlete, index) => {
+        const rankClass = index < 3 ? `rank-${index + 1}` : '';
+        html += `<tr class="${rankClass}">`;
+        html += `<td><strong>#${athlete.overall}</strong></td>`;
+        html += `<td><strong>${athlete.name}</strong></td>`;
+        html += `<td>${athlete.workouts.LQ1 ? '#' + athlete.workouts.LQ1 : '-'}</td>`;
+        html += `<td>${athlete.workouts.LQ2 ? '#' + athlete.workouts.LQ2 : '-'}</td>`;
+        html += `<td>${athlete.workouts.LQ3 ? '#' + athlete.workouts.LQ3 : '-'}</td>`;
+        html += `<td>${athlete.workouts.LQ4 ? '#' + athlete.workouts.LQ4 : '-'}</td>`;
+        html += `<td>${athlete.workouts.LQ5 ? '#' + athlete.workouts.LQ5 : '-'}</td>`;
+        html += `<td>${athlete.workouts.LQ6 ? '#' + athlete.workouts.LQ6 : '-'}</td>`;
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+}
+
+// Sort Circle21 athletes
+function sortCircle21Athletes(athletes, column, ascending) {
+    athletes.sort((a, b) => {
+        let valA, valB;
+        
+        if (column === 'name') {
+            valA = a.name.toLowerCase();
+            valB = b.name.toLowerCase();
+            return ascending ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        } else if (column === 'overall') {
+            valA = a.overall;
+            valB = b.overall;
+        } else {
+            // Workout columns (LQ1-LQ6)
+            valA = a.workouts[column] || 999999;
+            valB = b.workouts[column] || 999999;
+        }
+        
+        return ascending ? valA - valB : valB - valA;
+    });
+}
+
+// Sort handler for column clicks
+function sortCircle21(column) {
+    if (circle21SortColumn === column) {
+        circle21SortAscending = !circle21SortAscending;
+    } else {
+        circle21SortColumn = column;
+        circle21SortAscending = true;
+    }
+    displayCircle21Leaderboard();
 }
 
 // Initialize on page load

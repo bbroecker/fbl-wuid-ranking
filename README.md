@@ -293,6 +293,128 @@ To track usage statistics, add Google Analytics or similar:
 </script>
 ```
 
+## 🏆 Circle21 Competition Tracking
+
+**NEW!** Track your athletes' performance in external Circle21 competitions!
+
+### What is Circle21 Tracking?
+
+Monitor your athletes' placements in the **Fitness Bundesliga 2026 - Local Qualifier** competition hosted on Circle21. A Python script syncs their overall and workout-specific placements to Firebase.
+
+### Quick Setup (Manual Entry Mode)
+
+Since Circle21 doesn't provide a public JSON API, use manual data entry:
+
+**1. Check the leaderboard:**
+Visit: https://circle21.events/fitness-bundesliga-2026-local-qualifier?tab=leaderboard
+
+**2. Edit the sync script:**
+```bash
+nano circle21_sync_manual.py
+```
+
+**3. Update athlete placements in `ATHLETES_DATA`:**
+```python
+ATHLETES_DATA = [
+    {
+        "name": "Bastian Broecker",
+        "gender": "M",  # "M" or "F"
+        "overall": 42,
+        "workouts": {
+            "LQ1": 38,
+            "LQ2": 45,
+            "LQ3": None,  # None if not competed yet
+            "LQ4": None,
+            "LQ5": None,
+            "LQ6": None,
+        }
+    },
+    # Add more athletes here...
+]
+```
+
+**4. Run the sync:**
+```bash
+python3 circle21_sync_manual.py
+```
+
+Data instantly appears on your website!
+
+### How It Works
+
+1. **Manual Entry** - Look up placements on Circle21 website
+2. **Update Script** - Edit `ATHLETES_DATA` in `circle21_sync_manual.py`
+3. **Run Script** - Validates data and pushes to Firebase
+4. **Firebase Sync** - Database updates automatically
+5. **Website Updates** - Changes appear instantly on Circle21 Leaderboard tab
+6. **Add/Remove**:
+   - **Add athlete**: Add entry to `ATHLETES_DATA` and run script
+   - **Remove athlete**: Delete entry and run script (removes from website too)
+
+### Features
+- ✅ Overall and workout-specific placements (LQ1-LQ6)
+- ✅ Real-time Firebase sync
+- ✅ Sortable leaderboard (click column headers)
+- ✅ Separate Male/Female divisions
+- ✅ Data validation (ensures proper format)
+- ✅ Add athletes: Add to list and run script
+- ✅ Remove athletes: Remove from list and run script
+
+### Regular Updates
+
+After each Circle21 workout is complete:
+
+1. Check the [Circle21 Leaderboard](https://circle21.events/fitness-bundesliga-2026-local-qualifier?tab=leaderboard)
+2. Update placements in `circle21_sync_manual.py`
+3. Run: `python3 circle21_sync_manual.py`
+4. Website updates immediately!
+
+### Viewing Data
+
+**For Admins:**
+- Open Admin Panel → **🏆 Circle21 Tracking** tab
+- View currently synced athletes (read-only)
+- See instructions for updating data
+
+**For Athletes:**
+- Open main page → **Circle21 Leaderboard** tab
+- View sortable leaderboard with all tracked athletes
+- Filter by gender (M/F only)
+- Click column headers to sort by different placements
+
+### Future: Automatic Scraping (Optional)
+
+Want fully automatic updates? You can implement HTML scraping:
+- Install BeautifulSoup: `pip install beautifulsoup4`
+- Parse the HTML from Circle21 website
+- Or use Selenium for browser automation
+- Or contact Circle21 for API access
+
+The `circle21_sync.py` file contains starter code for automatic fetching.
+
+### Troubleshooting
+
+**Script validation fails:**
+- Check all required fields: name, gender, overall, workouts
+- Gender must be "M" or "F"
+- Placements must be numbers or None
+- All 6 workouts (LQ1-LQ6) must be present in workouts dict
+
+**Firebase update fails:**
+- Check internet connection
+- Verify Firebase API key in script matches your project
+- Check Firebase security rules allow writes
+
+**Data doesn't appear on website:**
+- Check browser console for errors
+- Verify Firebase URL matches in script and HTML files
+- Clear browser cache and reload page
+
+**Need to remove an athlete?**
+- Remove their entry from `ATHLETES_TO_TRACK` list
+- Run script again
+- They'll be removed from Firebase and website automatically
+
 ## 🤝 Support
 
 For issues or questions:
