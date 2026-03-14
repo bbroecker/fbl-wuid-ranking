@@ -454,44 +454,64 @@ function addCircle21Athlete() {
         return;
     }
     
-    // Check for duplicates
-    const exists = circle21TrackedAthletes.some(a => 
-        a.name.toLowerCase() === name.toLowerCase() && 
-        a.gender === gender &&
-        a.identifier === (identifier || null)
-    );
-    
-    if (exists) {
-        alert('⚠️  This athlete is already being tracked');
+    if (!window.database) {
+        alert('❌ Firebase not available');
         return;
     }
     
-    // Try to parse identifier as number (age)
-    let finalIdentifier = null;
-    if (identifier) {
-        const asNumber = parseInt(identifier);
-        finalIdentifier = isNaN(asNumber) ? identifier : asNumber;
-    }
+    // Read current data from Firebase, modify, and save (prevents race conditions)
+    const athletesRef = window.database.ref('circle21/config/athletes_to_track');
     
-    // Add to list
-    const newAthlete = {
-        name: name,
-        gender: gender,
-        identifier: finalIdentifier
-    };
-    
-    circle21TrackedAthletes.push(newAthlete);
-    
-    // Save to Firebase
-    saveCircle21TrackedAthletes();
-    
-    // Clear form
-    nameInput.value = '';
-    genderSelect.value = '';
-    identifierInput.value = '';
-    
-    // Show success message
-    showToast(`✅ Added ${name} to Circle21 tracking`);
+    athletesRef.once('value')
+        .then((snapshot) => {
+            const currentAthletes = snapshot.val() || [];
+            
+            // Check for duplicates
+            const exists = currentAthletes.some(a => 
+                a.name.toLowerCase() === name.toLowerCase() && 
+                a.gender === gender &&
+                a.identifier === (identifier || null)
+            );
+            
+            if (exists) {
+                alert('⚠️  This athlete is already being tracked');
+                return Promise.reject('duplicate');
+            }
+            
+            // Try to parse identifier as number (age)
+            let finalIdentifier = null;
+            if (identifier) {
+                const asNumber = parseInt(identifier);
+                finalIdentifier = isNaN(asNumber) ? identifier : asNumber;
+            }
+            
+            // Add to list
+            const newAthlete = {
+                name: name,
+                gender: gender,
+                identifier: finalIdentifier
+            };
+            
+            currentAthletes.push(newAthlete);
+            
+            // Save back to Firebase
+            return athletesRef.set(currentAthletes);
+        })
+        .then(() => {
+            // Clear form
+            nameInput.value = '';
+            genderSelect.value = '';
+            identifierInput.value = '';
+            
+            // Show success message
+            showToast(`✅ Added ${name} to Circle21 tracking`);
+        })
+        .catch((error) => {
+            if (error !== 'duplicate') {
+                console.error('Error adding athlete:', error);
+                alert('❌ Error adding athlete: ' + error.message);
+            }
+        });
 }
 
 // Remove athlete
@@ -502,10 +522,33 @@ function removeCircle21Athlete(index) {
         return;
     }
     
-    circle21TrackedAthletes.splice(index, 1);
-    saveCircle21TrackedAthletes();
+    if (!window.database) {
+        alert('❌ Firebase not available');
+        return;
+    }
     
-    showToast(`✅ Removed ${athlete.name} from Circle21 tracking`);
+    // Read current data from Firebase, modify, and save (prevents race conditions)
+    const athletesRef = window.database.ref('circle21/config/athletes_to_track');
+    
+    athletesRef.once('value')
+        .then((snapshot) => {
+            const currentAthletes = snapshot.val() || [];
+            
+            // Remove by index
+            if (index >= 0 && index < currentAthletes.length) {
+                currentAthletes.splice(index, 1);
+                return athletesRef.set(currentAthletes);
+            } else {
+                return Promise.reject('Invalid index');
+            }
+        })
+        .then(() => {
+            showToast(`✅ Removed ${athlete.name} from Circle21 tracking`);
+        })
+        .catch((error) => {
+            console.error('Error removing athlete:', error);
+            alert('❌ Error removing athlete: ' + error.message);
+        });
 }
 
 // Save tracked athletes to Firebase
