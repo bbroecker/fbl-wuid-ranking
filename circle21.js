@@ -464,18 +464,11 @@ function addCircle21Athlete() {
     
     athletesRef.once('value')
         .then((snapshot) => {
-            const currentAthletes = snapshot.val() || [];
+            let currentAthletes = snapshot.val();
             
-            // Check for duplicates
-            const exists = currentAthletes.some(a => 
-                a.name.toLowerCase() === name.toLowerCase() && 
-                a.gender === gender &&
-                a.identifier === (identifier || null)
-            );
-            
-            if (exists) {
-                alert('⚠️  This athlete is already being tracked');
-                return Promise.reject('duplicate');
+            // Ensure we have an array
+            if (!Array.isArray(currentAthletes)) {
+                currentAthletes = [];
             }
             
             // Try to parse identifier as number (age)
@@ -483,6 +476,16 @@ function addCircle21Athlete() {
             if (identifier) {
                 const asNumber = parseInt(identifier);
                 finalIdentifier = isNaN(asNumber) ? identifier : asNumber;
+            }
+            
+            // Check for duplicates (simplified check)
+            const exists = currentAthletes.some(a => 
+                a && a.name && a.name.toLowerCase() === name.toLowerCase() && a.gender === gender
+            );
+            
+            if (exists) {
+                alert('⚠️  This athlete is already being tracked');
+                throw new Error('duplicate');
             }
             
             // Add to list
@@ -507,9 +510,9 @@ function addCircle21Athlete() {
             showToast(`✅ Added ${name} to Circle21 tracking`);
         })
         .catch((error) => {
-            if (error !== 'duplicate') {
+            if (error.message !== 'duplicate') {
                 console.error('Error adding athlete:', error);
-                alert('❌ Error adding athlete: ' + error.message);
+                alert('❌ Error adding athlete: ' + (error.message || error));
             }
         });
 }
