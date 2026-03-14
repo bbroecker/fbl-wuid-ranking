@@ -119,13 +119,14 @@ def calculate_overall_rank(leaderboard_data, athlete_id, athlete_score):
     Args:
         leaderboard_data: Full API response
         athlete_id: ID of the athlete to rank
-        athlete_score: Sum of best 4 workout placements
+        athlete_score: Sum of best 4 workout placements (with penalty if < 4 workouts)
         
     Returns:
         Overall rank (1-based)
     """
     # Calculate scores for all athletes
     athlete_scores = []
+    total_athletes = len(leaderboard_data.get('athletes', []))
     
     for athlete in leaderboard_data.get('athletes', []):
         other_id = athlete['id']
@@ -142,8 +143,12 @@ def calculate_overall_rank(leaderboard_data, athlete_id, athlete_score):
             best_4 = sorted(placements)[:4]
             score = sum(best_4)
         else:
-            # Not enough workouts - penalty score
-            score = 999999
+            # Not enough workouts - add penalty
+            # Penalty = (4 - num_completed) * total_athletes
+            completed_sum = sum(sorted(placements)) if placements else 0
+            missing_workouts = 4 - len(placements)
+            penalty = missing_workouts * total_athletes
+            score = completed_sum + penalty
         
         athlete_scores.append((other_id, score))
     
@@ -229,14 +234,19 @@ def find_athlete_data(athlete_name, gender, leaderboard_data, identifier=None):
     # Sum of BEST 4 workout placements (lower is better)
     # Athletes with < 4 workouts rank lower than those with 4+
     completed_workouts = [r for r in workouts.values() if r is not None]
+    total_athletes = len(leaderboard_data.get('athletes', []))
     
     if len(completed_workouts) >= 4:
         # Take best 4 placements (lowest ranks)
         best_4 = sorted(completed_workouts)[:4]
         overall_score = sum(best_4)
     else:
-        # Not enough workouts - give penalty score
-        overall_score = 999999
+        # Not enough workouts - add penalty
+        # Penalty = (4 - num_completed) * total_athletes
+        completed_sum = sum(sorted(completed_workouts)) if completed_workouts else 0
+        missing_workouts = 4 - len(completed_workouts)
+        penalty = missing_workouts * total_athletes
+        overall_score = completed_sum + penalty
     
     # Calculate actual overall rank by comparing to all athletes
     overall_rank = calculate_overall_rank(leaderboard_data, athlete_id, overall_score)
@@ -245,7 +255,8 @@ def find_athlete_data(athlete_name, gender, leaderboard_data, identifier=None):
         'name': athlete_name,
         'gender': gender,
         'overall': overall_rank,
-        'overall_score': overall_score,  # Store for debugging
+        'overall_score': overall_score,
+        'workouts_completed': len(completed_workouts),
         'workouts': workouts,
         'timestamp': int(datetime.now().timestamp())
     }
@@ -328,9 +339,10 @@ def sync_circle21_data():
         
         if athlete_data:
             athletes_found.append(athlete_data)
-            workouts_completed = sum(1 for v in athlete_data['workouts'].values() if v is not None)
-            score_info = f" (score: {athlete_data['overall_score']})" if athlete_data.get('overall_score', 999999) < 999999 else " (incomplete)"
-            print(f"   ✅ {name} ({gender}) - Overall: #{athlete_data['overall']}{score_info} | {workouts_completed}/6 workouts")
+            workouts_completed = athlete_data.get('workouts_completed', 0)
+            score = athlete_data.get('overall_score', 0)
+            score_display = f"{score} ({workouts_completed}/6)" if workouts_completed >= 4 else f"{score} ({workouts_completed}/6)*"
+            print(f"   ✅ {name} ({gender}) - Overall: #{athlete_data['overall']} | Score: {score_display}")
         else:
             athletes_not_found.append((name, gender))
             print(f"   ❌ {name} ({gender}) - Not found")

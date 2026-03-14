@@ -275,10 +275,16 @@ function displayCircle21Leaderboard() {
     html += `<th onclick="sortCircle21('LQ4')" style="cursor: pointer;">LQ4 ${circle21SortColumn === 'LQ4' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
     html += `<th onclick="sortCircle21('LQ5')" style="cursor: pointer;">LQ5 ${circle21SortColumn === 'LQ5' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
     html += `<th onclick="sortCircle21('LQ6')" style="cursor: pointer;">LQ6 ${circle21SortColumn === 'LQ6' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
+    html += `<th onclick="sortCircle21('score')" style="cursor: pointer;">Score ${circle21SortColumn === 'score' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
+    html += `<th onclick="sortCircle21('completed')" style="cursor: pointer;">Completed ${circle21SortColumn === 'completed' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
     html += '</tr></thead><tbody>';
     
     athletes.forEach((athlete, index) => {
         const rankClass = index < 3 ? `rank-${index + 1}` : '';
+        const workoutsCompleted = athlete.workouts_completed || 0;
+        const score = athlete.overall_score || '-';
+        const scoreDisplay = workoutsCompleted < 4 && score !== '-' ? `${score}*` : score;
+        
         html += `<tr class="${rankClass}">`;
         html += `<td><strong>#${athlete.overall}</strong></td>`;
         html += `<td><strong>${athlete.name}</strong></td>`;
@@ -288,6 +294,8 @@ function displayCircle21Leaderboard() {
         html += `<td>${athlete.workouts.LQ4 ? '#' + athlete.workouts.LQ4 : '-'}</td>`;
         html += `<td>${athlete.workouts.LQ5 ? '#' + athlete.workouts.LQ5 : '-'}</td>`;
         html += `<td>${athlete.workouts.LQ6 ? '#' + athlete.workouts.LQ6 : '-'}</td>`;
+        html += `<td style="text-align: center;">${scoreDisplay}</td>`;
+        html += `<td style="text-align: center;">${workoutsCompleted}/6</td>`;
         html += '</tr>';
     });
     
@@ -307,6 +315,12 @@ function sortCircle21Athletes(athletes, column, ascending) {
         } else if (column === 'overall') {
             valA = a.overall;
             valB = b.overall;
+        } else if (column === 'score') {
+            valA = a.overall_score || 999999;
+            valB = b.overall_score || 999999;
+        } else if (column === 'completed') {
+            valA = a.workouts_completed || 0;
+            valB = b.workouts_completed || 0;
         } else {
             // Workout columns (LQ1-LQ6)
             valA = a.workouts[column] || 999999;
