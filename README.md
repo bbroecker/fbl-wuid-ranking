@@ -293,6 +293,118 @@ To track usage statistics, add Google Analytics or similar:
 </script>
 ```
 
+## 🏆 Circle21 Competition Tracking
+
+**NEW!** Track your athletes' performance in external Circle21 competitions with automatic data sync!
+
+### Overview
+
+The Circle21 module fetches athlete placements from Circle21 competitions (like Fitness Bundesliga Local Qualifiers) and displays them alongside your internal rankings - **completely isolated** from your main athlete data.
+
+### Architecture (Isolation Guaranteed)
+
+- **Separate JavaScript Module:** `circle21.js` (isolated from `scoring.js`)
+- **Separate Firebase Path:** `/circle21` (completely separate from `/scores`)
+- **Separate localStorage:** `fbl-circle21-athletes-v2` (no overlap)
+- **🔒 Zero Cross-Contamination:** Main athletes and Circle21 athletes cannot interfere
+
+### Quick Setup
+
+1. **Edit the sync script:** `circle21_sync.py`
+2. **Add athletes to track:**
+   ```python
+   ATHLETES_TO_TRACK = [
+       ("Bastian Broecker", "M"),
+       ("Another Athlete", "F"),
+       # Add more...
+   ]
+   ```
+3. **Run the sync:** `python3 circle21_sync.py`
+4. **View on website:** Circle21 Leaderboard tab updates automatically
+
+### How It Works
+
+The system uses Circle21's API to fetch:
+- Overall competition placement
+- Individual workout placements (LQ1-LQ6)
+- Real-time updates via Firebase
+
+**Data Flow:**
+```
+circle21_sync.py → Circle21 API → Firebase /circle21 → Website Display
+        ↑                                               ↓
+  Edit athlete list                            Isolated module loads data
+```
+
+### Features
+
+- ✅ **Fully Automatic:** Fetches from Circle21 API directly
+- ✅ **Isolated Architecture:** Cannot affect main athlete data
+- ✅ **Real-time Sync:** Updates via Firebase
+- ✅ **Sortable Leaderboard:** Click column headers to sort
+- ✅ **Gender Filtering:** Separate Male/Female divisions
+- ✅ **Multi-Workout Tracking:** 6 workouts (LQ1-LQ6) tracked per athlete
+
+### Running the Sync
+
+**Manual sync:**
+```bash
+python3 circle21_sync.py
+```
+
+**Automatic sync (cron):**
+```bash
+# Edit crontab
+crontab -e
+
+# Add this line to sync every hour:
+0 * * * * cd /path/to/fbl_wuid_internal_ranking && python3 circle21_sync.py >> /tmp/circle21.log 2>&1
+```
+
+### Data Structure
+
+Each athlete tracked:
+```json
+{
+  "name": "Bastian Broecker",
+  "gender": "M",
+  "overall": 571,
+  "workouts": {
+    "LQ1": 449,
+    "LQ2": null,
+    "LQ3": 297,
+    "LQ4": null,
+    "LQ5": 253,
+    "LQ6": 154
+  },
+  "timestamp": 1773500002
+}
+```
+
+### Security Notes
+
+- Bearer token in `circle21_sync.py` expires periodically
+- To update token: Copy from browser DevTools → Network tab → Circle21 API request
+- Token location: Line 34 in `circle21_sync.py`
+
+### Troubleshooting
+
+**Sync script fails:**
+- Check internet connection
+- Verify Firebase API key in script
+- Check Circle21 website accessibility
+
+**Athletes not showing:**
+- Verify script ran successfully (check output)
+- Check Firebase Console → `/circle21` path
+- Hard refresh browser (Ctrl+Shift+R)
+
+**Need female division:**
+- Update `division_female` ID in `circle21_sync.py` line 31
+- Get ID from Circle21 website URL when viewing female leaderboard
+
+---
+
 ## 🤝 Support
 
 For issues or questions:

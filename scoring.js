@@ -527,9 +527,13 @@ function removeToast(toast) {
 
 // Tab switching
 function showTab(tabName) {
-    // Update active tab
-    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-    event.target.classList.add('active');
+    // Update active tab - find the button with matching onclick
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.getAttribute('onclick') === `showTab('${tabName}')`) {
+            tab.classList.add('active');
+        }
+    });
 
     // Hide all tab content
     document.querySelectorAll('.tab-content').forEach(content => {
@@ -542,6 +546,7 @@ function showTab(tabName) {
         'input': 'input-tab',
         'workout': 'workout-tab',
         'overall': 'overall-tab',
+        'circle21': 'circle21-tab',
         'manage': 'manage-tab',
         'export': 'export-tab'
     };
@@ -557,6 +562,10 @@ function showTab(tabName) {
         displayWorkoutRankings();
     } else if (tabName === 'overall') {
         displayOverallStandings();
+    } else if (tabName === 'circle21') {
+        if (typeof displayCircle21Leaderboard === 'function') {
+            displayCircle21Leaderboard();
+        }
     }
 }
 

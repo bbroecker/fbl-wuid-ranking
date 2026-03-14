@@ -701,6 +701,7 @@
             <button class="tab active" onclick="showTab('input')">Input Scores</button>
             <button class="tab" onclick="showTab('workout')">Workout Rankings</button>
             <button class="tab" onclick="showTab('overall')">Overall Standings</button>
+            <button class="tab" onclick="showTab('circle21')">Circle21 Leaderboard</button>
         </div>
 
         <div class="content">
@@ -801,6 +802,22 @@
 
                 <div id="overall-standings-display"></div>
             </div>
+
+            <!-- CIRCLE21 LEADERBOARD TAB -->
+            <div id="circle21-tab" class="tab-content" style="display: none;">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Filter by Gender</label>
+                        <select id="circle21GenderFilter" onchange="displayCircle21Leaderboard()">
+                            <option value="all">All</option>
+                            <option value="M">Male (M)</option>
+                            <option value="F">Female (F)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="circle21-leaderboard-display"></div>
+            </div>
         </div>
         
         <div id="firebase-status" style="text-align: center; padding: 10px 5px; font-size: 11px; color: #666; border-top: 1px solid #333;">
@@ -860,6 +877,7 @@
     </script>
     
     <script src="scoring.js"></script>
+    <script src="circle21.js"></script>
     <script>
         // Track the original athlete identity when editing (to handle name/team/gender changes)
         let editingOriginalIdentity = null;
