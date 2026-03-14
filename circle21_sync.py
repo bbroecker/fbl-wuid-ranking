@@ -23,8 +23,10 @@ ATHLETES_TO_TRACK = [
     ("Philipp Singer", "M"),
     ("Daniel Kerscher", "M"),
     ("Julian Huber", "M"),
+    ("Christoph Callegari", "M"),
     ("Juliane Hauffe", "F"),
     ("Birgit Geißinger", "F"),
+    ("Corinna Grünke", "F"),
     ("Tom Otto", "M", "70fe83b7"),  # Partial user_id to select the top-ranked Tom Otto
     ("Lydia K", "F"),
     # Add more athletes here...
@@ -99,15 +101,23 @@ def calculate_workout_rank(athlete_id, wod_data):
     # CrossFit scoring: lower time or higher reps if capped
     athlete_time = athlete_result.get('time') or 999999999
     athlete_reps = athlete_result.get('how_many') or 0
+    athlete_tiebreak = athlete_result.get('athlete_tie_break') or 999999999
     
     rank = 1
     for result in results:
         other_time = result.get('time') or 999999999
         other_reps = result.get('how_many') or 0
+        other_tiebreak = result.get('athlete_tie_break') or 999999999
         
-        # If both finished, lower time wins
-        # If both capped, more reps wins
-        if other_time < athlete_time or (other_time == athlete_time and other_reps > athlete_reps):
+        # Scoring logic with tiebreaker:
+        # 1. If different completion times, lower wins
+        # 2. If both capped (same time), more reps wins
+        # 3. If same reps, lower tiebreak time wins (reached that rep count faster)
+        if other_time < athlete_time:
+            rank += 1
+        elif other_time == athlete_time and other_reps > athlete_reps:
+            rank += 1
+        elif other_time == athlete_time and other_reps == athlete_reps and other_tiebreak < athlete_tiebreak:
             rank += 1
     
     return rank
