@@ -17,6 +17,8 @@ from datetime import datetime
 # Gender: "M" for Male, "F" for Female  
 ATHLETES_TO_TRACK = [
     ("Bastian Broecker", "M"),
+    ("Thomas Reppa", "M"),
+    ("Mathias Edfelder", "M"),
     # Add more athletes here...
 ]
 
@@ -109,28 +111,21 @@ def find_athlete_data(athlete_name, gender, leaderboard_data):
         return None
     
     # Find athlete in athletes list
+    # NOTE: The athletes array from Circle21 API is already sorted by rank
+    # The array position (+1) IS the overall ranking
     athlete_info = None
-    for athlete in leaderboard_data.get('athletes', []):
+    overall_rank = None
+    
+    for i, athlete in enumerate(leaderboard_data.get('athletes', [])):
         if athlete.get('name', '').lower() == athlete_name.lower():
             athlete_info = athlete
+            overall_rank = i + 1  # Array index + 1 = rank
             break
     
     if not athlete_info:
         return None
     
     athlete_id = athlete_info['id']
-    
-    # Calculate overall rank (higher points = better)
-    athletes_sorted = sorted(
-        leaderboard_data.get('athletes', []),
-        key=lambda x: x.get('points', 0),
-        reverse=True
-    )
-    overall_rank = None
-    for i, ath in enumerate(athletes_sorted, 1):
-        if ath['id'] == athlete_id:
-            overall_rank = i
-            break
     
     # Get workout rankings
     workouts = {}
@@ -231,9 +226,20 @@ def sync_circle21_data():
         for name, gender in athletes_not_found:
             print(f"      - {name} ({gender})")
     
+    # Prepare data with metadata (total athlete counts per division)
+    sync_data = {
+        'athletes': athletes_found,
+        'metadata': {
+            'total_athletes_male': len(male_data.get('athletes', [])) if male_data else 0,
+            'total_athletes_female': len(female_data.get('athletes', [])) if female_data else 0,
+            'last_sync': int(datetime.now().timestamp()),
+            'sync_timestamp_readable': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+    }
+    
     # Update Firebase
     print(f"\n📤 Updating Firebase database...")
-    if update_firebase(athletes_found):
+    if update_firebase(sync_data):
         print(f"✅ Firebase updated successfully!")
         print(f"\n✅ Sync completed!")
         print(f"   {len(athletes_found)} athletes now in Firebase")

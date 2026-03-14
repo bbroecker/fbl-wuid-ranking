@@ -9,9 +9,11 @@ const CIRCLE21_STORAGE_KEY = 'fbl-circle21-athletes-v2';
 
 // Circle21 local cache
 let circle21AthleteCache = [];
+let circle21Metadata = {};
 let circle21DataLoaded = false;
 
 // Circle21 data structure: { name, gender, overall, workouts: {LQ1, LQ2, LQ3, LQ4, LQ5, LQ6}, timestamp }
+// Metadata: { total_athletes_male, total_athletes_female, last_sync, sync_timestamp_readable }
 
 // ====================================
 // Firebase Integration (Separate Path)
@@ -28,12 +30,28 @@ function setupCircle21FirebaseListener() {
         const circle21Ref = window.database.ref('circle21');
         circle21Ref.on('value', (snapshot) => {
             const data = snapshot.val();
-            if (data && Array.isArray(data)) {
-                circle21AthleteCache = data;
+            if (data) {
+                // Handle new structure with metadata
+                if (data.athletes && Array.isArray(data.athletes)) {
+                    circle21AthleteCache = data.athletes;
+                    circle21Metadata = data.metadata || {};
+                } 
+                // Handle old structure (direct array)
+                else if (Array.isArray(data)) {
+                    circle21AthleteCache = data;
+                    circle21Metadata = {};
+                } else {
+                    circle21AthleteCache = [];
+                    circle21Metadata = {};
+                }
+                
                 circle21DataLoaded = true;
                 
                 // Save to localStorage as backup
-                localStorage.setItem(CIRCLE21_STORAGE_KEY, JSON.stringify(data));
+                localStorage.setItem(CIRCLE21_STORAGE_KEY, JSON.stringify({
+                    athletes: circle21AthleteCache,
+                    metadata: circle21Metadata
+                }));
                 
                 // Update displays
                 if (typeof displayCircle21AthletesList === 'function') {
@@ -43,9 +61,10 @@ function setupCircle21FirebaseListener() {
                     displayCircle21Leaderboard();
                 }
                 
-                console.log(`Circle21: Loaded ${data.length} athletes from Firebase`);
+                console.log(`Circle21: Loaded ${circle21AthleteCache.length} athletes from Firebase`);
             } else {
                 circle21AthleteCache = [];
+                circle21Metadata = {};
                 circle21DataLoaded = true;
             }
         }, (error) => {
@@ -62,7 +81,25 @@ function setupCircle21FirebaseListener() {
 // Load Circle21 data from localStorage
 function loadCircle21FromLocalStorage() {
     const stored = localStorage.getItem(CIRCLE21_STORAGE_KEY);
-    circle21AthleteCache = stored ? JSON.parse(stored) : [];
+    if (stored) {
+        const data = JSON.parse(stored);
+        // Handle new structure with metadata
+        if (data.athletes && Array.isArray(data.athletes)) {
+            circle21AthleteCache = data.athletes;
+            circle21Metadata = data.metadata || {};
+        } 
+        // Handle old structure (direct array)
+        else if (Array.isArray(data)) {
+            circle21AthleteCache = data;
+            circle21Metadata = {};
+        } else {
+            circle21AthleteCache = [];
+            circle21Metadata = {};
+        }
+    } else {
+        circle21AthleteCache = [];
+        circle21Metadata = {};
+    }
     circle21DataLoaded = true;
 }
 
@@ -191,7 +228,7 @@ let circle21SortColumn = 'overall';
 let circle21SortAscending = true;
 
 function displayCircle21Leaderboard() {
-   const container =document.getElementById('circle21-leaderboard-display');
+    const container = document.getElementById('circle21-leaderboard-display');
     if (!container) return;
     
     const genderFilterEl = document.getElementById('circle21GenderFilter');
@@ -207,8 +244,21 @@ function displayCircle21Leaderboard() {
     // Sort by current column
     sortCircle21Athletes(athletes, circle21SortColumn, circle21SortAscending);
     
+    // Get total athlete count for current gender
+    const totalAthletes = genderFilter === 'M' 
+        ? (circle21Metadata.total_athletes_male || 0)
+        : (circle21Metadata.total_athletes_female || 0);
+    
+    // Build header with total count
+    let html = '';
+    if (totalAthletes > 0) {
+        html += `<div style="text-align: center; color: #999; font-size: 13px; margin-bottom: 15px; padding: 8px; background: #1a1a1a; border-radius: 4px;">
+            Tracking ${athletes.length} athlete${athletes.length !== 1 ? 's' : ''} out of ${totalAthletes.toLocaleString()} total competitors
+        </div>`;
+    }
+    
     // Build table
-    let html = '<div class="table-container"><table>';
+    html += '<div class="table-container"><table>';
     html += '<thead><tr>';
     html += `<th onclick="sortCircle21('overall')" style="cursor: pointer;">Overall ${circle21SortColumn === 'overall' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
     html += `<th onclick="sortCircle21('name')" style="cursor: pointer;">Name ${circle21SortColumn === 'name' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
