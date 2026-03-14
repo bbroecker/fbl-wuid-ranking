@@ -488,7 +488,6 @@
             <button class="tab" onclick="showTab('manage')">👥 Manage Athletes</button>
             <button class="tab" onclick="showTab('export')">💾 Data Management</button>
             <button class="tab" onclick="showTab('history')">📊 Activity Log</button>
-            <button class="tab" onclick="showTab('predictions')">🔮 Predictions</button>
         </div>
 
         <div class="content">
@@ -824,63 +823,6 @@
                     </ul>
                 </div>
             </div>
-
-            <!-- PREDICTIONS MANAGEMENT TAB -->
-            <div id="predictions-tab" class="tab-content" style="display: none;">
-                <div class="form-section">
-                    <h3>🔮 Prediction Round Configuration</h3>
-                    <p style="color: #999; margin-bottom: 20px;">Manage the workout prediction and voting round.</p>
-                    
-                    <div class="input-row">
-                        <label>Round Name:</label>
-                        <input type="text" id="prediction-round-name-input" placeholder="e.g., 26.3 Prediction" style="flex: 2;">
-                    </div>
-                    
-                    <div class="input-row">
-                        <label>Voting Deadline:</label>
-                        <input type="datetime-local" id="prediction-deadline-input" style="flex: 2;">
-                    </div>
-                    
-                    <div class="input-row">
-                        <label>Visibility:</label>
-                        <input type="checkbox" id="prediction-visible-checkbox">
-                        <span style="color: #ccc; margin-left: 10px;">Enable prediction tab for athletes</span>
-                    </div>
-                    
-                    <div style="margin-top: 20px; display: flex; gap: 10px;">
-                        <button class="btn btn-primary" onclick="savePredictionAdminConfig()">Save Configuration</button>
-                        <button class="btn btn-secondary" onclick="loadPredictionAdminConfig()">Reload</button>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h3>📊 Current Predictions</h3>
-                    <div id="admin-predictions-display"></div>
-                </div>
-
-                <div class="form-section">
-                    <h3>🗑️ Reset Predictions</h3>
-                    <p style="color: #999; margin-bottom: 15px;">
-                        This will delete all predictions, votes, and reset the configuration.
-                        Use this to prepare for a new prediction round.
-                    </p>
-                    <button class="btn btn-secondary" onclick="resetPredictions()" style="background: #c0392b;">
-                        Reset All Predictions
-                    </button>
-                </div>
-
-                <div class="info-box">
-                    <h3>ℹ️ How Predictions Work</h3>
-                    <ul>
-                        <li><strong>Round Name:</strong> Give each prediction round a descriptive name (e.g., "26.3 Prediction")</li>
-                        <li><strong>Deadline:</strong> Optional deadline after which athletes cannot submit/edit predictions or vote</li>
-                        <li><strong>Visibility:</strong> Toggle to show/hide the prediction tab from athletes</li>
-                        <li><strong>Athlete Actions:</strong> Athletes can create one prediction and vote for one prediction</li>
-                        <li><strong>Vote Protection:</strong> Editing a prediction removes all its votes (athletes are warned)</li>
-                        <li><strong>Reset:</strong> Use between rounds to clear all data and start fresh</li>
-                    </ul>
-                </div>
-            </div>
         </div>
         
         <div id="firebase-status" style="text-align: center; padding: 10px 5px; font-size: 11px; color: #666; border-top: 1px solid #333;">
@@ -1075,104 +1017,14 @@
             document.getElementById('manage-tab').style.display = tabName === 'manage' ? 'block' : 'none';
             document.getElementById('export-tab').style.display = tabName === 'export' ? 'block' : 'none';
             document.getElementById('history-tab').style.display = tabName === 'history' ? 'block' : 'none';
-            document.getElementById('predictions-tab').style.display = tabName === 'predictions' ? 'block' : 'none';
 
             // Load data for the tab
             if (tabName === 'manage') {
                 displayAthleteList();
             } else if (tabName === 'history') {
                 displayActivityLog();
-            } else if (tabName === 'predictions') {
-                loadPredictionAdminConfig();
-                displayAdminPredictions();
             }
         }
-
-        // ===== PREDICTION ADMIN FUNCTIONS =====
-        
-        // Load prediction config into admin form
-        function loadPredictionAdminConfig() {
-            const config = getPredictionConfig();
-            
-            document.getElementById('prediction-round-name-input').value = config.name || '';
-            document.getElementById('prediction-visible-checkbox').checked = config.visible || false;
-            
-            if (config.deadline) {
-                // Convert timestamp to datetime-local format
-                const date = new Date(config.deadline);
-                const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                document.getElementById('prediction-deadline-input').value = localDate.toISOString().slice(0, 16);
-            } else {
-                document.getElementById('prediction-deadline-input').value = '';
-            }
-        }
-        
-        // Save prediction config from admin form
-        function savePredictionAdminConfig() {
-            const name = document.getElementById('prediction-round-name-input').value.trim();
-            const visible = document.getElementById('prediction-visible-checkbox').checked;
-            const deadlineInput = document.getElementById('prediction-deadline-input').value;
-            
-            const config = {
-                name: name,
-                visible: visible,
-                deadline: deadlineInput ? new Date(deadlineInput).getTime() : null
-            };
-            
-            savePredictionConfig(config);
-            showToast('Prediction configuration saved!');
-            
-            // Update prediction tab visibility on main page
-            updatePredictionTabVisibility();
-        }
-        
-        // Update prediction tab visibility on main page
-        function updatePredictionTabVisibility() {
-            // This will be handled when athletes visit the page
-            // The tab button stays visible, but content shows locked message if not visible
-        }
-        
-        // Display all predictions for admin
-        function displayAdminPredictions() {
-            const predictions = getAllPredictions();
-            const votes = getAllVotes();
-            const container = document.getElementById('admin-predictions-display');
-            
-            const entries = Object.entries(predictions);
-            
-            if (entries.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No predictions yet.</p>';
-                return;
-            }
-            
-            let html = '<div class="table-container"><table>';
-            html += '<thead><tr>';
-            html += '<th>Athlete</th>';
-            html += '<th>Title</th>';
-            html += '<th>Description</th>';
-            html += '<th>Votes</th>';
-            html += '<th>Published</th>';
-            html += '</tr></thead><tbody>';
-            
-            entries.forEach(([key, pred]) => {
-                const voteCount = Object.values(votes).filter(v => v === key).length;
-                const isPublished = pred.title && pred.title.trim() && pred.description && pred.description.trim();
-                
-                html += '<tr>';
-                html += `<td><strong>${escapeHtml(pred.athleteName)}</strong></td>`;
-                html += `<td>${pred.title ? escapeHtml(pred.title) : '<em style="color:#999">No title</em>'}</td>`;
-                html += `<td style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">`;
-                html += pred.description ? escapeHtml(pred.description) : '<em style="color:#999">No description</em>';
-                html += '</td>';
-                html += `<td style="text-align: center;"><strong>${voteCount}</strong></td>`;
-                html += `<td style="text-align: center;">${isPublished ? '✓' : '✗'}</td>`;
-                html += '</tr>';
-            });
-            
-            html += '</tbody></table></div>';
-            container.innerHTML = html;
-        }
-
         // Initialize Firebase and load data on page load
         window.addEventListener('DOMContentLoaded', function() {
             initFirebase();
