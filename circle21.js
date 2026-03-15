@@ -167,13 +167,14 @@ function displayCircle21AthletesList() {
         html += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 15px;">';
         
         males.forEach(athlete => {
-            const workoutsCompleted = Object.values(athlete.workouts).filter(v => v !== null).length;
+            const workouts = athlete.workouts || {};
+            const workoutsCompleted = Object.values(workouts).filter(v => v !== null).length;
             
             // Calculate which workouts are in the best 4 (for athletes with 4+ workouts)
             let best4Workouts = new Set();
             if (workoutsCompleted >= 4) {
                 const workoutsList = ['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6']
-                    .map(wod => ({ wod, rank: athlete.workouts[wod] }))
+                    .map(wod => ({ wod, rank: workouts[wod] }))
                     .filter(w => w.rank !== null && w.rank !== undefined);
                 
                 // Sort by rank (lower is better) and take top 4
@@ -191,13 +192,13 @@ function displayCircle21AthletesList() {
                     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; font-size: 12px;">
                         ${['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6'].map(wod => {
                             const isBest4 = best4Workouts.has(wod);
-                            const color = athlete.workouts[wod] 
+                            const color = workouts[wod] 
                                 ? (isBest4 ? '#008AC2' : '#4CAF50')
                                 : '#666';
                             return `<div style="background: #0d1820; padding: 5px; border-radius: 4px; text-align: center;">
                                 <div style="color: #666;">${wod}</div>
                                 <div style="color: ${color}; font-weight: ${isBest4 ? 'bold' : '600'};">
-                                    ${athlete.workouts[wod] ? '#' + athlete.workouts[wod] : '-'}
+                                    ${workouts[wod] ? '#' + workouts[wod] : '-'}
                                 </div>
                             </div>`;
                         }).join('')}
@@ -215,13 +216,14 @@ function displayCircle21AthletesList() {
         html += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 15px;">';
         
         females.forEach(athlete => {
-            const workoutsCompleted = Object.values(athlete.workouts).filter(v => v !== null).length;
+            const workouts = athlete.workouts || {};
+            const workoutsCompleted = Object.values(workouts).filter(v => v !== null).length;
             
             // Calculate which workouts are in the best 4 (for athletes with 4+ workouts)
             let best4Workouts = new Set();
             if (workoutsCompleted >= 4) {
                 const workoutsList = ['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6']
-                    .map(wod => ({ wod, rank: athlete.workouts[wod] }))
+                    .map(wod => ({ wod, rank: workouts[wod] }))
                     .filter(w => w.rank !== null && w.rank !== undefined);
                 
                 // Sort by rank (lower is better) and take top 4
@@ -239,13 +241,13 @@ function displayCircle21AthletesList() {
                     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; font-size: 12px;">
                         ${['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6'].map(wod => {
                             const isBest4 = best4Workouts.has(wod);
-                            const color = athlete.workouts[wod] 
+                            const color = workouts[wod] 
                                 ? (isBest4 ? '#008AC2' : '#4CAF50')
                                 : '#666';
                             return `<div style="background: #0d1820; padding: 5px; border-radius: 4px; text-align: center;">
                                 <div style="color: #666;">${wod}</div>
                                 <div style="color: ${color}; font-weight: ${isBest4 ? 'bold' : '600'};">
-                                    ${athlete.workouts[wod] ? '#' + athlete.workouts[wod] : '-'}
+                                    ${workouts[wod] ? '#' + workouts[wod] : '-'}
                                 </div>
                             </div>`;
                         }).join('')}
@@ -346,11 +348,14 @@ function displayCircle21Leaderboard() {
         const score = athlete.overall_score || '-';
         const scoreDisplay = workoutsCompleted < 4 && score !== '-' ? `${score}*` : score;
         
+        // Ensure workouts object exists
+        const workouts = athlete.workouts || {};
+        
         // Calculate which workouts are in the best 4 (for athletes with 4+ workouts)
         let best4Workouts = new Set();
         if (workoutsCompleted >= 4) {
             const workoutsList = ['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6']
-                .map(wod => ({ wod, rank: athlete.workouts[wod] }))
+                .map(wod => ({ wod, rank: workouts[wod] }))
                 .filter(w => w.rank !== null && w.rank !== undefined);
             
             // Sort by rank (lower is better) and take top 4
@@ -364,7 +369,7 @@ function displayCircle21Leaderboard() {
         
         // Display workouts with blue highlighting for best 4
         ['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6'].forEach(wod => {
-            const rank = athlete.workouts[wod];
+            const rank = workouts[wod];
             const isBest4 = best4Workouts.has(wod);
             const style = isBest4 ? 'font-weight: bold; color: #008AC2;' : '';
             const value = rank ? '#' + rank : '-';
