@@ -542,14 +542,8 @@ function showTab(tabName) {
 
     // Show selected tab
     const tabMapping = {
-        'config': 'config-tab',
-        'input': 'input-tab',
-        'workout': 'workout-tab',
-        'overall': 'overall-tab',
         'circle21': 'circle21-tab',
-        'circle21-workouts': 'circle21-workouts-tab',
-        'manage': 'manage-tab',
-        'export': 'export-tab'
+        'circle21-workouts': 'circle21-workouts-tab'
     };
 
     const tabId = tabMapping[tabName];
@@ -559,11 +553,7 @@ function showTab(tabName) {
     }
 
     // Load data for the tab
-    if (tabName === 'workout') {
-        displayWorkoutRankings();
-    } else if (tabName === 'overall') {
-        displayOverallStandings();
-    } else if (tabName === 'circle21') {
+    if (tabName === 'circle21') {
         if (typeof displayCircle21Leaderboard === 'function') {
             displayCircle21Leaderboard();
         }
@@ -1237,7 +1227,6 @@ function clearAllData() {
 
 // Initialize on page load
 window.addEventListener('DOMContentLoaded', function() {
-    loadConfigIntoForm();
-    updateInputForms();
-    updateWorkoutSelector();
+    // Load Circle21 data on startup
+    showTab('circle21');
 });

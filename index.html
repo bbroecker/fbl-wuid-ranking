@@ -698,113 +698,12 @@
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="showTab('input')">Input Scores</button>
-            <button class="tab" onclick="showTab('workout')">Workout Rankings</button>
-            <button class="tab" onclick="showTab('overall')">Overall Standings</button>
-            <button class="tab" onclick="showTab('circle21')">Circle21 Leaderboard</button>
+            <button class="tab active" onclick="showTab('circle21')">Circle21 Leaderboard</button>
             <button class="tab" onclick="showTab('circle21-workouts')">Circle21 Workouts</button>
         </div>
 
         <div class="content">
-            <div id="edit-mode-banner" class="edit-mode-banner">
-                Editing mode - Update your scores and click "Save Scores" to save changes
-            </div>
-
-            <!-- INPUT SCORES TAB -->
-            <div id="input-tab" class="tab-content">
-                <div class="filters">
-                    <div class="filter-group">
-                        <label>Athlete Name</label>
-                        <div class="autocomplete-container">
-                            <input type="text" id="athleteName" placeholder="Enter your name" onchange="checkExistingAthlete()" oninput="showAutocompleteSuggestions(this)" onkeydown="handleAutocompleteKeydown(event)" autocomplete="off">
-                            <div class="autocomplete-suggestions" id="athleteNameSuggestions"></div>
-                        </div>
-                    </div>
-                    <div class="filter-group">
-                        <label>Gender</label>
-                        <select id="athleteGender">
-                            <option value="M">Male (M)</option>
-                            <option value="F">Female (F)</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Team</label>
-                        <select id="athleteTeam">
-                            <option value="team1">Team 1</option>
-                            <option value="team2">Team 2</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h3>Enter Workout Scores</h3>
-                    <div class="form-grid" id="workout-forms">
-                        <!-- Populated dynamically -->
-                    </div>
-
-                    <div style="margin-top: 25px; text-align: center;">
-                        <button class="btn btn-primary" onclick="saveScores()">Save Scores</button>
-                        <button class="btn btn-secondary" onclick="clearForm()">Clear Form</button>
-                        <button class="btn btn-edit" id="edit-mode-btn" onclick="enableEditMode()" style="display: none;">Edit My Scores</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- WORKOUT RANKINGS TAB -->
-            <div id="workout-tab" class="tab-content" style="display: none;">
-                <div class="filters">
-                    <div class="filter-group">
-                        <label>Filter by Gender</label>
-                        <select id="workoutGenderFilter" onchange="displayWorkoutRankings()">
-                            <option value="all">All</option>
-                            <option value="M">Male (M)</option>
-                            <option value="F">Female (F)</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Filter by Team</label>
-                        <select id="workoutTeamFilter" onchange="displayWorkoutRankings()">
-                            <option value="all">All</option>
-                            <option value="team1">Team 1</option>
-                            <option value="team2">Team 2</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Select Workout</label>
-                        <select id="workoutSelector" onchange="displayWorkoutRankings()">
-                            <!-- Options populated dynamically from config -->
-                        </select>
-                    </div>
-                </div>
-
-                <div id="workout-rankings-display"></div>
-            </div>
-
-            <!-- OVERALL STANDINGS TAB -->
-            <div id="overall-tab" class="tab-content" style="display: none;">
-                <div class="filters">
-                    <div class="filter-group">
-                        <label>Filter by Gender</label>
-                        <select id="overallGenderFilter" onchange="displayOverallStandings()">
-                            <option value="all">All</option>
-                            <option value="M">Male (M)</option>
-                            <option value="F">Female (F)</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Filter by Team</label>
-                        <select id="overallTeamFilter" onchange="displayOverallStandings()">
-                            <option value="all">All</option>
-                            <option value="team1">Team 1</option>
-                            <option value="team2">Team 2</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div id="overall-standings-display"></div>
-            </div>
-
-            <div id="circle21-tab" class="tab-content" style="display: none;">
+            <div id="circle21-tab" class="tab-content">
                <div class="filters">
                     <div class="filter-group">
                         <label>Filter by Gender</label>
