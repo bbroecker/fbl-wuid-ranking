@@ -544,6 +544,7 @@ function showTab(tabName) {
     const tabMapping = {
         'circle21': 'circle21-tab',
         'circle21-workouts': 'circle21-workouts-tab',
+        'team-leaderboard': 'team-leaderboard-tab',
         'team-breakdown': 'team-breakdown-tab'
     };
 
@@ -561,6 +562,10 @@ function showTab(tabName) {
     } else if (tabName === 'circle21-workouts') {
         if (typeof displayCircle21Workouts === 'function') {
             displayCircle21Workouts();
+        }
+    } else if (tabName === 'team-leaderboard') {
+        if (typeof displayTeamLeaderboard === 'function') {
+            displayTeamLeaderboard();
         }
     } else if (tabName === 'team-breakdown') {
         if (typeof populateTeamBreakdownSelect === 'function') {

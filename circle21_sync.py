@@ -37,7 +37,8 @@ CIRCLE21_API = {
     "base_url": "https://api.circle21.events/api/leaderboard",
     "competition_id": "ca492eb3-516d-445b-8093-66b3df1c6465",
     "division_male": "5b561478-69cb-435d-b090-53513293c22f",
-    "division_female": "6546e368-3f42-4c98-a42e-eb220486c81e",  # TODO: Get female division ID
+    "division_female": "6546e368-3f42-4c98-a42e-eb220486c81e",
+    "division_team": "c0ebe4e1-afe1-44b7-9275-c433748f5d22",  # Team division for fetching all teams with IDs
     "bearer_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI5ODlmMDRjZC1iNWRhLTQ2ZTUtOTg0Yy1kYjU3YmIxOWNlZjIiLCJqdGkiOiJmZDE1NzM3MDM2YTczYWIyZTY4MjAyNmQ4YmJiMzdlNDVhNjY0YjlkZmM5YzI5YmFjZWFlMGIzNzZhYTdjZjM0ODZhZGM2ODhlYThmZmMyNiIsImlhdCI6MTc3Mjk4NjU5MC44NzI1MiwibmJmIjoxNzcyOTg2NTkwLjg3MjUyMywiZXhwIjoxODA0NTIyNTkwLjg2NjUzNywic3ViIjoiMzA1Y2M1ZGItMGNmMS00MzFiLThjYzktYjg5MWFiOWQwMzNmIiwic2NvcGVzIjpbXX0.qTGPTD2SmVhihQgeX_yYEjNXU8wuyXJOrm9OliEbWNUf48LoY1xRONGjtIQPbdVdk-7Ye2kpvyNOfdrT7N8dKCWPIht9wLXafasFGF4qRrdD-EPxPuR6Ygxvu-tmlrDEbTj9mF94bucWuil83cXfAVAYrTyGITa-mK26bPIBHGC-Wbk0VJzDGL9a4oiQEo_RDHyh3MOrkA_iralEStNYfdZ-jF8nJVsPkeWVcPYnyZK1Ar0NuIFD0yIEhGbaJKbZu8RoJDgFwAk2aRyrAhVSc1cRg6tF49VAISJAk-KGJr4Bs7Yw7rop89dOVdzh-ZeyqLvdMR4tpQzpt8t7Y6KSXl9Rmq9OYuOThfavvqir5CqCQmYWixy2yrXHwcqhBcVk0SvajUmRuKrDyqPrcv5xWFQjcDD_rYFPj355FQoZDmbqyhsp2P7NRMlXdCjWtwInnOQ2q1zGKnaXATkD1yHMD_C3bTqlxLLQy2odTQmX9U6Ggp8B6ZEvyL2GICEL7ZFT427M3O0WJhDSPRpR2w9K1bIyoRGzPy2t_aOfLwqoD3x-PxljIfB1O6hxbf1kSz3oeWjVvBkTm48V48v2fwgfubSiclm8hLn3wHErSj_u4LY8gQR42DSKGDHpSZVw8W0TNQ8RGTcwOs5WDnlh0FG5WAWc1CWXBvTVlSkXF3IIb6M"
 }
 
@@ -109,6 +110,31 @@ def fetch_circle21_leaderboard(gender):
             
     except Exception as e:
         print(f"  ❌ Error fetching {gender} leaderboard: {e}")
+        return None
+
+
+def fetch_circle21_team_leaderboard():
+    """
+    Fetch Circle21 team leaderboard to get list of all registered teams with their IDs
+    Returns JSON data with teams array: [{name, id, ...}, ...]
+    """
+    url = f"{CIRCLE21_API['base_url']}/team?competition_id={CIRCLE21_API['competition_id']}&division_id={CIRCLE21_API['division_team']}"
+    
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={
+                'Accept': 'application/json, text/plain, */*',
+                'Authorization': f"Bearer {CIRCLE21_API['bearer_token']}"
+            }
+        )
+        
+        with urllib.request.urlopen(req, timeout=15) as response:
+            data = json.loads(response.read().decode())
+            return data
+            
+    except Exception as e:
+        print(f"  ❌ Error fetching team leaderboard: {e}")
         return None
 
 
@@ -587,10 +613,375 @@ def sync_circle21_data():
         return False
 
 
+def sync_all_team_scores():
+    """
+    Calculate scores for ALL teams in the competition and store in Firebase
+    Uses Circle21 team leaderboard API to automatically fetch all registered teams
+    """
+    print("\n" + "="*60)
+    print("🏆 SYNCING ALL TEAM SCORES")
+    print("="*60 + "\n")
+    
+    # Fetch leaderboards (individual athlete data)
+    print("🔄 Fetching leaderboard data...")
+    male_data = fetch_circle21_leaderboard("M")
+    female_data = fetch_circle21_leaderboard("F")
+    
+    if not male_data or not female_data:
+        print("❌ Failed to fetch leaderboard data")
+        return False
+    
+    print(f"✅ Fetched {len(male_data['athletes'])}M + {len(female_data['athletes'])}F athletes")
+    
+    # Fetch team leaderboard (all registered teams with IDs)
+    print("\n🔄 Fetching team leaderboard...")
+    team_leaderboard = fetch_circle21_team_leaderboard()
+    
+    if not team_leaderboard or 'teams' not in team_leaderboard:
+        print("❌ Failed to fetch team leaderboard")
+        return False
+    
+    registered_teams = team_leaderboard['teams']
+    print(f"✅ Found {len(registered_teams)} registered teams in Circle21")
+    
+    # Fetch rosters for all registered teams
+    print("\n🔄 Fetching team rosters from Circle21...")
+    team_rosters = {}  # {team_name: {'males': [], 'females': []}}
+    
+    for team in registered_teams:
+        team_name = team.get('name')
+        team_id = team.get('id')
+        
+        if not team_name or not team_id:
+            continue
+        
+        # Fetch team members
+        members = fetch_team_members(team_id)
+        if not members:
+            continue
+        
+        # Match members to leaderboard data to get full athlete info
+        roster = {'males': [], 'females': []}
+        
+        for member in members:
+            gender = member['gender']
+            athlete_data = male_data if gender == 'M' else female_data
+            
+            # Find matching athlete in leaderboard
+            for athlete in athlete_data['athletes']:
+                if athlete.get('name', '').lower() == member['name'].lower():
+                    roster['males' if gender == 'M' else 'females'].append(athlete)
+                    break
+        
+        team_rosters[team_name] = roster
+    
+    print(f"✅ Loaded {len(team_rosters)} team rosters")
+    
+    # Build set of athletes assigned to registered teams
+    print("\n🔄 Extracting remaining athletes...")
+    assigned_athlete_ids = set()
+    for roster in team_rosters.values():
+        for athlete in roster['males'] + roster['females']:
+            assigned_athlete_ids.add(athlete['id'])
+    
+    # Group remaining athletes by club_name (fallback for unregistered teams)
+    teams = {}
+    teams.update(team_rosters)  # Start with registered teams
+    
+    # Process males not yet assigned
+    for athlete in male_data['athletes']:
+        if athlete['id'] in assigned_athlete_ids:
+            continue
+        
+        club_name = athlete.get('club_name')
+        if not club_name or club_name == 'null':
+            continue
+        
+        if club_name not in teams:
+            teams[club_name] = {'males': [], 'females': []}
+        teams[club_name]['males'].append(athlete)
+    
+    # Process females not yet assigned
+    for athlete in female_data['athletes']:
+        if athlete['id'] in assigned_athlete_ids:
+            continue
+        
+        club_name = athlete.get('club_name')
+        if not club_name or club_name == 'null':
+            continue
+        
+        if club_name not in teams:
+            teams[club_name] = {'males': [], 'females': []}
+        teams[club_name]['females'].append(athlete)
+    
+    print(f"✅ Found {len(teams)} teams total")
+    
+    # Override with Firebase names for WUID teams (special case - manually tracked athletes)
+    print("\n🔄 Applying Firebase team names for tracked teams...")
+    firebase_athletes = []
+    try:
+        firebase_url = f"{FIREBASE_CONFIG['databaseURL']}/circle21/leaderboard.json"
+        with urllib.request.urlopen(firebase_url) as response:
+            firebase_data = json.loads(response.read().decode('utf-8'))
+            if firebase_data:
+                if isinstance(firebase_data, dict) and 'athletes' in firebase_data:
+                    firebase_athletes = firebase_data['athletes']
+                elif isinstance(firebase_data, list):
+                    firebase_athletes = firebase_data
+    except Exception as e:
+        print(f"  ⚠️  Could not load Firebase data: {e}")
+    
+    if firebase_athletes:
+        print(f"  ✅ Loaded {len(firebase_athletes)} athletes from Firebase")
+        
+        # For WUID teams: use Firebase data DIRECTLY (not Circle21 API)
+        # This ensures we use the correct roster without duplicates
+        print("  🔄 Building WUID teams from Firebase data...")
+        wuid_teams = {}
+        for fb_athlete in firebase_athletes:
+            if not isinstance(fb_athlete, dict):
+                continue
+            
+            fb_team_name = fb_athlete.get('team_name', '')
+            if 'wuid' not in fb_team_name.lower():
+                continue
+            
+            if fb_team_name not in wuid_teams:
+                wuid_teams[fb_team_name] = {'males': [], 'females': []}
+            
+            # Convert Firebase athlete to Circle21 format
+            gender = fb_athlete.get('gender', 'M')
+            athlete_data = {
+                'name': fb_athlete.get('name'),
+                'id': fb_athlete.get('id', fb_athlete.get('name')),
+                'gender': gender,
+                'firebase_workouts': fb_athlete.get('workouts', {})
+            }
+            
+            if gender == 'M':
+                wuid_teams[fb_team_name]['males'].append(athlete_data)
+            else:
+                wuid_teams[fb_team_name]['females'].append(athlete_data)
+        
+        if wuid_teams:
+            print(f"  ✅ Built {len(wuid_teams)} WUID teams from Firebase:")
+            for wuid_team, roster in wuid_teams.items():
+                print(f"    {wuid_team}: {len(roster['males'])}M + {len(roster['females'])}F")
+        
+        # Replace Circle21 WUID teams with Firebase WUID teams
+        firebase_teams = {}
+        for team_name, roster in teams.items():
+            if 'wuid' not in team_name.lower():
+                firebase_teams[team_name] = roster
+        
+        firebase_teams.update(wuid_teams)
+        teams = firebase_teams
+        print(f"✅ Applied Firebase names, now {len(teams)} teams")
+    
+    # Calculate score for each team
+    print("\n🔄 Calculating team scores...")
+    workout_names = ['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6']
+    
+    # PRE-CALCULATE rank maps for each workout
+    print("  📊 Pre-calculating workout rankings...")
+    male_rank_maps = []
+    female_rank_maps = []
+    
+    for wod_entry in male_data.get('wods', []):
+        workout = wod_entry['workouts'][0] if wod_entry.get('workouts') else {}
+        results = workout.get('results', [])
+        sorted_results = sorted(results, key=lambda r: r.get('time') or 999999999)
+        rank_map = {r['athlete_id']: idx + 1 for idx, r in enumerate(sorted_results)}
+        male_rank_maps.append(rank_map)
+    
+    for wod_entry in female_data.get('wods', []):
+        workout = wod_entry['workouts'][0] if wod_entry.get('workouts') else {}
+        results = workout.get('results', [])
+        sorted_results = sorted(results, key=lambda r: r.get('time') or 999999999)
+        rank_map = {r['athlete_id']: idx + 1 for idx, r in enumerate(sorted_results)}
+        female_rank_maps.append(rank_map)
+    
+    print(f"  ✅ Rank maps built for {len(male_rank_maps)} male + {len(female_rank_maps)} female workouts")
+    
+    team_scores = {}
+    
+    for team_name, roster in teams.items():
+        males = roster['males']
+        females = roster['females']
+        
+        # Build athlete objects with workout ranks
+        team_athletes = []
+        
+        # Process males
+        for athlete in males:
+            workouts = {}
+            
+            # Check if this is a Firebase athlete (WUID) with pre-loaded workout data
+            if 'firebase_workouts' in athlete:
+                fb_workouts = athlete['firebase_workouts']
+                for workout_name in workout_names:
+                    if workout_name in fb_workouts and 'rank' in fb_workouts[workout_name]:
+                        workouts[workout_name] = {'rank': fb_workouts[workout_name]['rank']}
+            else:
+                # Look up ranks from Circle21 API rank maps
+                athlete_id = athlete['id']
+                for idx, workout_name in enumerate(workout_names):
+                    if idx < len(male_rank_maps):
+                        rank = male_rank_maps[idx].get(athlete_id)
+                        if rank:
+                            workouts[workout_name] = {'rank': rank}
+            
+            team_athletes.append({
+                'name': athlete['name'],
+                'gender': 'M',
+                'workouts': workouts
+            })
+        
+        # Process females
+        for athlete in females:
+            workouts = {}
+            
+            # Check if this is a Firebase athlete (WUID) with pre-loaded workout data
+            if 'firebase_workouts' in athlete:
+                fb_workouts = athlete['firebase_workouts']
+                for workout_name in workout_names:
+                    if workout_name in fb_workouts and 'rank' in fb_workouts[workout_name]:
+                        workouts[workout_name] = {'rank': fb_workouts[workout_name]['rank']}
+            else:
+                # Look up ranks from Circle21 API rank maps
+                athlete_id = athlete['id']
+                for idx, workout_name in enumerate(workout_names):
+                    if idx < len(female_rank_maps):
+                        rank = female_rank_maps[idx].get(athlete_id)
+                        if rank:
+                            workouts[workout_name] = {'rank': rank}
+            
+            team_athletes.append({
+                'name': athlete['name'],
+                'gender': 'F',
+                'workouts': workouts
+            })
+        
+        # Calculate team score
+        team_score = calculate_team_score_from_athletes(team_name, team_athletes)
+        team_scores[team_name] = team_score
+    
+    print(f"✅ Calculated {len(team_scores)} team scores")
+    
+    # Store in Firebase
+    print("\n📤 Updating Firebase with team scores...")
+    firebase_url = f"{FIREBASE_CONFIG['databaseURL']}/circle21/team_scores.json?auth={FIREBASE_CONFIG['apiKey']}"
+    
+    team_scores_array = [
+        {
+            'team_name': team_name,
+            **score_data
+        }
+        for team_name, score_data in team_scores.items()
+    ]
+    
+    data_to_store = {
+        'teams': team_scores_array,
+        'metadata': {
+            'last_sync': int(datetime.now().timestamp()),
+            'sync_timestamp_readable': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'total_teams': len(team_scores)
+        }
+    }
+    
+    try:
+        req = urllib.request.Request(
+            firebase_url,
+            data=json.dumps(data_to_store).encode('utf-8'),
+            headers={'Content-Type': 'application/json'},
+            method='PUT'
+        )
+        with urllib.request.urlopen(req) as response:
+            if response.status == 200:
+                valid_count = len([t for t in team_scores_array if t.get('valid')])
+                invalid_count = len([t for t in team_scores_array if not t.get('valid')])
+                print(f"✅ Team scores updated in Firebase!")
+                print(f"   {valid_count} valid teams, {invalid_count} invalid teams")
+                return True
+    except urllib.error.URLError as e:
+        print(f"❌ Firebase update failed: {e}")
+        return False
+
+
+def calculate_team_score_from_athletes(team_name, athletes):
+    """Calculate team score from athlete list (Python version of JS function)"""
+    females = [a for a in athletes if a['gender'] == 'F']
+    males = [a for a in athletes if a['gender'] == 'M']
+    
+    workout_names = ['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6']
+    
+    # Process athletes - mark as valid if 4+ workouts
+    def process_athlete(athlete):
+        workouts = athlete.get('workouts', {})
+        completed = sum(1 for wod in workout_names if workouts.get(wod))
+        return {
+            'name': athlete['name'],
+            'workouts': {wod: workouts.get(wod, {}).get('rank') for wod in workout_names},
+            'completed': completed,
+            'valid': completed >= 4
+        }
+    
+    processed_females = [process_athlete(a) for a in females]
+    processed_males = [process_athlete(a) for a in males]
+    
+    # Calculate score for each workout
+    workout_scores = []
+    for wod in workout_names:
+        # Get valid athletes who completed this workout
+        valid_f = [a for a in processed_females if a['valid'] and a['workouts'].get(wod)]
+        valid_m = [a for a in processed_males if a['valid'] and a['workouts'].get(wod)]
+        
+        if len(valid_f) >= 3 and len(valid_m) >= 3:
+            # Sort and take best 3
+            valid_f.sort(key=lambda a: a['workouts'][wod])
+            valid_m.sort(key=lambda a: a['workouts'][wod])
+            
+            best_f = valid_f[:3]
+            best_m = valid_m[:3]
+            
+            score = sum(a['workouts'][wod] for a in best_f + best_m)
+            workout_scores.append({'wod': wod, 'score': score})
+    
+    # Take best 4 workouts
+    if len(workout_scores) >= 4:
+        workout_scores.sort(key=lambda w: w['score'])
+        best_4 = workout_scores[:4]
+        total = sum(w['score'] for w in best_4)
+        
+        return {
+            'team_name': team_name,
+            'total_score': total,
+            'valid_workouts': len(workout_scores),
+            'valid': True,
+            'valid_females': len([a for a in processed_females if a['valid']]),
+            'valid_males': len([a for a in processed_males if a['valid']])
+        }
+    
+    return {
+        'team_name': team_name,
+        'total_score': None,
+        'valid_workouts': len(workout_scores),
+        'valid': False,
+        'valid_females': len([a for a in processed_females if a['valid']]),
+        'valid_males': len([a for a in processed_males if a['valid']])
+    }
+
+
 def main():
     """Main entry point"""
     try:
+        # Sync athlete data
         success = sync_circle21_data()
+        
+        # Also sync team scores
+        if success:
+            team_success = sync_all_team_scores()
+        
         print("\n" + "="*60 + "\n")
         sys.exit(0 if success else 1)
     except KeyboardInterrupt:

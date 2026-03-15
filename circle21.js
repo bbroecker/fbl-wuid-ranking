@@ -796,6 +796,9 @@ function initializeCircle21Module() {
             populateCircle21WorkoutSelect();
             displayCircle21Workouts();
         }
+        if (document.getElementById('team-leaderboard-display')) {
+            displayTeamLeaderboard();
+        }
         if (document.getElementById('team-breakdown-display')) {
             populateTeamBreakdownSelect();
         }
@@ -1142,6 +1145,513 @@ function showToast(message) {
         // Fallback to alert
         alert(message);
     }
+}
+
+// ====================================
+// TEAM SCORING CALCULATION (Shared Logic)
+// ====================================
+
+function calculateTeamScore(teamName) {
+    const allAthletes = getAllCircle21Athletes();
+    const teamAthletes = allAthletes.filter(a => a.team_name === teamName);
+    
+    if (teamAthletes.length === 0) {
+        return {
+            teamName,
+            totalScore: null,
+            validWorkouts: 0,
+            valid: false,
+            message: 'No athletes found'
+        };
+    }
+    
+    const females = teamAthletes.filter(a => a.gender === 'F');
+    const males = teamAthletes.filter(a => a.gender === 'M');
+    
+    // Process athletes to calculate validity
+    const processAthlete = (athlete) => {
+        const workouts = athlete.workouts || {};
+        const workoutNames = ['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6'];
+        
+        const athleteWorkouts = {};
+        let completed = 0;
+        
+        workoutNames.forEach(wod => {
+            const wodData = workouts[wod];
+            if (wodData) {
+                const rank = typeof wodData === 'object' ? wodData.rank : wodData;
+                athleteWorkouts[wod] = rank;
+                if (rank) completed++;
+            } else {
+                athleteWorkouts[wod] = null;
+            }
+        });
+        
+        const validWorkouts = [];
+        workoutNames.forEach(wod => {
+            if (athleteWorkouts[wod]) {
+                validWorkouts.push({ wod, rank: athleteWorkouts[wod] });
+            }
+        });
+        
+        validWorkouts.sort((a, b) => a.rank - b.rank);
+        const valid = completed >= 4;
+        
+        return {
+            name: athlete.name,
+            workouts: athleteWorkouts,
+            completed,
+            valid
+        };
+    };
+    
+    const processedFemales = females.map(processAthlete);
+    const processedMales = males.map(processAthlete);
+    
+    // Calculate workout scores and validity
+    const workoutNames = ['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6'];
+    const workoutScores = {};
+    const workoutValidity = {};
+    
+    workoutNames.forEach(wod => {
+        const validFemalesForWod = processedFemales.filter(a => a.valid && a.workouts[wod]);
+        const validMalesForWod = processedMales.filter(a => a.valid && a.workouts[wod]);
+        
+        validFemalesForWod.sort((a, b) => a.workouts[wod] - b.workouts[wod]);
+        validMalesForWod.sort((a, b) => a.workouts[wod] - b.workouts[wod]);
+        
+        const best3Females = validFemalesForWod.slice(0, 3);
+        const best3Males = validMalesForWod.slice(0, 3);
+        
+        const isValid = best3Females.length >= 3 && best3Males.length >= 3;
+        
+        const femaleScore = best3Females.reduce((sum, a) => sum + a.workouts[wod], 0);
+        const maleScore = best3Males.reduce((sum, a) => sum + a.workouts[wod], 0);
+        const totalWodScore = isValid ? (femaleScore + maleScore) : null;
+        
+        workoutScores[wod] = totalWodScore;
+        workoutValidity[wod] = isValid;
+    });
+    
+    // Find best 4 valid workouts
+    const validWorkoutScores = [];
+    workoutNames.forEach(wod => {
+        if (workoutValidity[wod]) {
+            validWorkoutScores.push({ wod, score: workoutScores[wod] });
+        }
+    });
+    
+    validWorkoutScores.sort((a, b) => a.score - b.score);
+    const best4Workouts = validWorkoutScores.slice(0, 4);
+    
+    // Calculate team total score
+    const teamTotalScore = validWorkoutScores.length >= 4 
+        ? best4Workouts.reduce((sum, w) => sum + w.score, 0)
+        : null;
+    
+    const validFemales = processedFemales.filter(a => a.valid).length;
+    const validMales = processedMales.filter(a => a.valid).length;
+    
+    return {
+        teamName,
+        totalScore: teamTotalScore,
+        validWorkouts: validWorkoutScores.length,
+        valid: teamTotalScore !== null,
+        validFemales,
+        validMales,
+        workoutScores,
+        best4Workouts: best4Workouts.map(w => w.wod)
+    };
+}
+
+function calculateTeamScoreFromAthletes(teamName, athleteArray) {
+    const teamAthletes = athleteArray.filter(a => a.team_name === teamName);
+    
+    console.log(`Calculating score for "${teamName}": ${teamAthletes.length} athletes`);
+    
+    if (teamAthletes.length === 0) {
+        return {
+            teamName,
+            totalScore: null,
+            validWorkouts: 0,
+            valid: false,
+            message: 'No athletes found'
+        };
+    }
+    
+    const females = teamAthletes.filter(a => a.gender === 'F');
+    const males = teamAthletes.filter(a => a.gender === 'M');
+    
+    console.log(`  ${teamName}: ${females.length}F, ${males.length}M`);
+    
+    // Show sample athlete with workouts
+    if (teamAthletes.length > 0) {
+        const sample = teamAthletes[0];
+        console.log(`  Sample athlete:`, sample.name, sample.workouts);
+    }
+    
+    // Process athletes
+    const processAthlete = (athlete) => {
+        const workouts = athlete.workouts || {};
+        const workoutNames = ['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6'];
+        
+        const athleteWorkouts = {};
+        let completed = 0;
+        
+        workoutNames.forEach(wod => {
+            const wodData = workouts[wod];
+            if (wodData) {
+                const rank = typeof wodData === 'object' ? wodData.rank : wodData;
+                athleteWorkouts[wod] = rank;
+                if (rank) completed++;
+            } else {
+                athleteWorkouts[wod] = null;
+            }
+        });
+        
+        const validWorkouts = [];
+        workoutNames.forEach(wod => {
+            if (athleteWorkouts[wod]) {
+                validWorkouts.push({ wod, rank: athleteWorkouts[wod] });
+            }
+        });
+        
+        validWorkouts.sort((a, b) => a.rank - b.rank);
+        const valid = completed >= 4;
+        
+        return {
+            name: athlete.name,
+            workouts: athleteWorkouts,
+            completed,
+            valid
+        };
+    };
+    
+    const processedFemales = females.map(processAthlete);
+    const processedMales = males.map(processAthlete);
+    
+    // Calculate workout scores
+    const workoutNames = ['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6'];
+    const workoutScores = {};
+    const workoutValidity = {};
+    
+    workoutNames.forEach(wod => {
+        const validFemalesForWod = processedFemales.filter(a => a.valid && a.workouts[wod]);
+        const validMalesForWod = processedMales.filter(a => a.valid && a.workouts[wod]);
+        
+        validFemalesForWod.sort((a, b) => a.workouts[wod] - b.workouts[wod]);
+        validMalesForWod.sort((a, b) => a.workouts[wod] - b.workouts[wod]);
+        
+        const best3Females = validFemalesForWod.slice(0, 3);
+        const best3Males = validMalesForWod.slice(0, 3);
+        
+        const isValid = best3Females.length >= 3 && best3Males.length >= 3;
+        
+        const femaleScore = best3Females.reduce((sum, a) => sum + a.workouts[wod], 0);
+        const maleScore = best3Males.reduce((sum, a) => sum + a.workouts[wod], 0);
+        const totalWodScore = isValid ? (femaleScore + maleScore) : null;
+        
+        workoutScores[wod] = totalWodScore;
+        workoutValidity[wod] = isValid;
+    });
+    
+    // Find best 4 valid workouts
+    const validWorkoutScores = [];
+    workoutNames.forEach(wod => {
+        if (workoutValidity[wod]) {
+            validWorkoutScores.push({ wod, score: workoutScores[wod] });
+        }
+    });
+    
+    validWorkoutScores.sort((a, b) => a.score - b.score);
+    const best4Workouts = validWorkoutScores.slice(0, 4);
+    
+    // Calculate team total
+    const teamTotalScore = validWorkoutScores.length >= 4 
+        ? best4Workouts.reduce((sum, w) => sum + w.score, 0)
+        : null;
+    
+    const validFemales = processedFemales.filter(a => a.valid).length;
+    const validMales = processedMales.filter(a => a.valid).length;
+    
+    return {
+        teamName,
+        totalScore: teamTotalScore,
+        validWorkouts: validWorkoutScores.length,
+        valid: teamTotalScore !== null,
+        validFemales,
+        validMales,
+        workoutScores,
+        best4Workouts: best4Workouts.map(w => w.wod)
+    };
+}
+
+// ====================================
+// TEAM LEADERBOARD DISPLAY
+// ====================================
+
+async function fetchFullCircle21Leaderboard() {
+    const API_CONFIG = {
+        base_url: 'https://api.circle21.events/api/leaderboard',
+        competition_id: 'ca492eb3-516d-445b-8093-66b3df1c6465',
+        division_male: '5b561478-69cb-435d-b090-53513293c22f',
+        division_female: '6546e368-3f42-4c98-a42e-eb220486c81e',
+        bearer_token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI5ODlmMDRjZC1iNWRhLTQ2ZTUtOTg0Yy1kYjU3YmIxOWNlZjIiLCJqdGkiOiJmZDE1NzM3MDM2YTczYWIyZTY4MjAyNmQ4YmJiMzdlNDVhNjY0YjlkZmM5YzI5YmFjZWFlMGIzNzZhYTdjZjM0ODZhZGM2ODhlYThmZmMyNiIsImlhdCI6MTc3Mjk4NjU5MC44NzI1MiwibmJmIjoxNzcyOTg2NTkwLjg3MjUyMywiZXhwIjoxODA0NTIyNTkwLjg2NjUzNywic3ViIjoiMzA1Y2M1ZGItMGNmMS00MzFiLThjYzktYjg5MWFiOWQwMzNmIiwic2NvcGVzIjpbXX0.qTGPTD2SmVhihQgeX_yYEjNXU8wuyXJOrm9OliEbWNUf48LoY1xRONGjtIQPbdVdk-7Ye2kpvyNOfdrT7N8dKCWPIht9wLXafasFGF4qRrdD-EPxPuR6Ygxvu-tmlrDEbTj9mF94bucWuil83cXfAVAYrTyGITa-mK26bPIBHGC-Wbk0VJzDGL9a4oiQEo_RDHyh3MOrkA_iralEStNYfdZ-jF8nJVsPkeWVcPYnyZK1Ar0NuIFD0yIEhGbaJKbZu8RoJDgFwAk2aRyrAhVSc1cRg6tF49VAISJAk-KGJr4Bs7Yw7rop89dOVdzh-ZeyqLvdMR4tpQzpt8t7Y6KSXl9Rmq9OYuOThfavvqir5CqCQmYWixy2yrXHwcqhBcVk0SvajUmRuKrDyqPrcv5xWFQjcDD_rYFPj355FQoZDmbqyhsp2P7NRMlXdCjWtwInnOQ2q1zGKnaXATkD1yHMD_C3bTqlxLLQy2odTQmX9U6Ggp8B6ZEvyL2GICEL7ZFT427M3O0WJhDSPRpR2w9K1bIyoRGzPy2t_aOfLwqoD3x-PxljIfB1O6hxbf1kSz3oeWjVvBkTm48V48v2fwgfubSiclm8hLn3wHErSj_u4LY8gQR42DSKGDHpSZVw8W0TNQ8RGTcwOs5WDnlh0FG5WAWc1CWXBvTVlSkXF3IIb6M'
+    };
+    
+    console.log('Fetching both male and female divisions from Circle21...');
+    
+    try {
+        // Fetch both divisions in parallel
+        const [maleResponse, femaleResponse] = await Promise.all([
+            fetch(`${API_CONFIG.base_url}?competition_id=${API_CONFIG.competition_id}&division_id=${API_CONFIG.division_male}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${API_CONFIG.bearer_token}`
+                }
+            }),
+            fetch(`${API_CONFIG.base_url}?competition_id=${API_CONFIG.competition_id}&division_id=${API_CONFIG.division_female}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${API_CONFIG.bearer_token}`
+                }
+            })
+        ]);
+        
+        if (!maleResponse.ok || !femaleResponse.ok) {
+            throw new Error(`HTTP error - Male: ${maleResponse.status}, Female: ${femaleResponse.status}`);
+        }
+        
+        const [maleData, femaleData] = await Promise.all([
+            maleResponse.json(),
+            femaleResponse.json()
+        ]);
+        
+        console.log('Male athletes:', maleData.athletes?.length);
+        console.log('Female athletes:', femaleData.athletes?.length);
+        
+        return { maleData, femaleData };
+    } catch (error) {
+        console.error('Error fetching full Circle21 leaderboard:', error);
+        return null;
+    }
+}
+
+function parseCircle21Athletes(apiData, gender) {
+    if (!apiData || !apiData.athletes) {
+        console.log(`No athletes data in ${gender} API response`);
+        return [];
+    }
+    
+    console.log(`Parsing ${apiData.athletes.length} ${gender} athletes from API`);
+    console.log(`  ${gender} division has ${apiData.wods?.length} workouts`);
+    
+    // Debug: Check workout structure
+    if (apiData.wods && apiData.wods[0]) {
+        const firstWod = apiData.wods[0];
+        console.log(`  First workout structure:`, firstWod.wod?.name);
+        if (firstWod.workouts && firstWod.workouts[0]) {
+            const workout = firstWod.workouts[0];
+            console.log(`  Has ${workout.results?.length} results`);
+            if (workout.results && workout.results[0]) {
+                console.log(`  First result keys:`, Object.keys(workout.results[0]));
+                console.log(`  First result sample:`, workout.results[0]);
+            }
+        }
+    }
+    
+    const athletes = [];
+    const workoutNames = ['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6'];
+    
+    let athletesWithWorkouts = 0;
+    let debugAthleteIndex = -1;
+    
+    apiData.athletes.forEach((athleteEntry, idx) => {
+        // API uses 'club_name' for team name
+        const name = athleteEntry.name;
+        const teamName = athleteEntry.club_name;
+        const teamId = athleteEntry.team_id;  // Might differentiate sub-teams
+        
+        if (!name || !teamName || teamName === 'null' || teamName === '') {
+            return;
+        }
+        
+        // Find first athlete with club name
+        if (debugAthleteIndex === -1 && teamName) {
+            debugAthleteIndex = idx;
+            console.log(`  Debug athlete ${idx}: ${name}, id: ${athleteEntry.id}, team: ${teamName}, team_id: ${teamId}`);
+        }
+        
+        const workouts = {};
+        if (apiData.wods && Array.isArray(apiData.wods)) {
+            apiData.wods.forEach((wodEntry, index) => {
+                const wodName = workoutNames[index];
+                if (!wodName) return;
+                
+                const wodWorkouts = wodEntry.workouts;
+                if (!wodWorkouts || wodWorkouts.length === 0) return;
+                
+                const workout = wodWorkouts[0];
+                const results = workout.results || [];
+                
+                // Use 'id' field to match athlete results
+                const athleteId = athleteEntry.id;
+                const athleteResult = results.find(r => r.athlete_id === athleteId);
+                
+                // Debug matching for first athlete
+                if (idx === debugAthleteIndex && index === 0) {
+                    console.log(`  Trying to match athlete id ${athleteId} in ${results.length} results`);
+                    console.log(`  Found result:`, athleteResult);
+                    console.log(`  Result has position field:`, athleteResult?.position);
+                    console.log(`  Calculating rank from results...`);
+                }
+                
+                if (athleteResult) {
+                    // Position field doesn't exist in API, calculate rank by sorting results
+                    // Sort by time (lower is better) or reps (higher is better for AMRAP)
+                    const sortedResults = [...results].sort((a, b) => {
+                        const aTime = a.time || 999999999;
+                        const bTime = b.time || 999999999;
+                        const aReps = a.how_many || 0;
+                        const bReps = b.how_many || 0;
+                        
+                        // If different times, lower wins
+                        if (aTime !== bTime) return aTime - bTime;
+                        // If same time (capped), more reps wins
+                        if (aReps !== bReps) return bReps - aReps;
+                        // Tiebreak
+                        const aTiebreak = a.tie_break || 999999999;
+                        const bTiebreak = b.tie_break || 999999999;
+                        return aTiebreak - bTiebreak;
+                    });
+                    
+                    // Find position in sorted list
+                    const rank = sortedResults.findIndex(r => r.athlete_id === athleteId) + 1;
+                    
+                    if (idx === debugAthleteIndex && index === 0) {
+                        console.log(`  Calculated rank: ${rank}`);
+                    }
+                    
+                    if (rank > 0) {
+                        workouts[wodName] = { rank };
+                    }
+                }
+            });
+        }
+        
+        if (Object.keys(workouts).length > 0) {
+            athletesWithWorkouts++;
+        }
+        
+        // Debug first WUID athlete
+        if (idx < 5 && teamName.toLowerCase().includes('wuid')) {
+            console.log(`  ${gender} WUID athlete:`, name, teamName, 'workouts:', Object.keys(workouts).length);
+        }
+        
+        athletes.push({
+            name,
+            team_name: teamName,
+            team_id: teamId,  // Store team_id for sub-team differentiation
+            gender,
+            workouts
+        });
+    });
+    
+    console.log(`Parsed ${athletes.length} ${gender} athletes (${athletesWithWorkouts} with workout data)`);
+    return athletes;
+}
+
+async function displayTeamLeaderboard() {
+    const container = document.getElementById('team-leaderboard-display');
+    if (!container) return;
+    
+    container.innerHTML = '<p style="text-align: center; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Loading team leaderboard from Firebase...</p>';
+    
+    // Fetch pre-calculated team scores from Firebase
+    const firebaseUrl = 'https://fbl-wuid-ranking-default-rtdb.europe-west1.firebasedatabase.app';
+    const teamScoresData = await fetch(`${firebaseUrl}/circle21/team_scores.json`)
+        .then(res => res.json())
+        .catch(err => {
+            console.error('Error fetching team scores:', err);
+            return null;
+        });
+    
+    if (!teamScoresData || !teamScoresData.teams) {
+        container.innerHTML = '<p style="color: #ff6b6b;">Failed to load team leaderboard. Please try again.</p>';
+        return;
+    }
+    
+    const teamScores = teamScoresData.teams;
+    const metadata = teamScoresData.metadata || {};
+    
+    console.log(`Loaded ${teamScores.length} teams from Firebase`);
+    console.log(`Last sync: ${metadata.sync_timestamp_readable || 'Unknown'}`);
+    
+    // Separate valid and invalid teams
+    const validTeams = teamScores.filter(t => t.valid);
+    const invalidTeams = teamScores.filter(t => !t.valid);
+    
+    console.log(`Team scores: ${validTeams.length} valid, ${invalidTeams.length} invalid`);
+    
+    // Sort valid teams by total score (ascending, lower is better)
+    validTeams.sort((a, b) => a.total_score - b.total_score);
+    
+    // Build HTML
+    let html = '<h2 style="text-align: center; margin-bottom: 20px;">🏆 Team Leaderboard</h2>';
+    html += '<p style="text-align: center; color: #999; margin-bottom: 30px;">Based on best 4 out of 6 workouts (each workout = best 3F + best 3M)</p>';
+    
+    html += '<table class="leaderboard-table">';
+    html += '<thead><tr>';
+    html += '<th>Rank</th>';
+    html += '<th>Team</th>';
+    html += '<th>Total Score</th>';
+    html += '<th>Valid Workouts</th>';
+    html += '<th>Valid Athletes (F/M)</th>';
+    html += '</tr></thead><tbody>';
+    
+    // Display valid teams
+    validTeams.forEach((team, index) => {
+        html += '<tr>';
+        html += `<td style="font-weight: bold; color: #008AC2;">${index + 1}</td>`;
+        html += `<td>${team.team_name}</td>`;
+        html += `<td style="font-weight: bold; color: #4CAF50;">${team.total_score}</td>`;
+        html += `<td>${team.valid_workouts}/6</td>`;
+        html += `<td>${team.valid_females}F / ${team.valid_males}M</td>`;
+        html += '</tr>';
+    });
+    
+    // Display invalid teams at bottom
+    if (invalidTeams.length > 0) {
+        invalidTeams.forEach(team => {
+            const reason = team.valid_workouts < 4 ? `Only ${team.valid_workouts}/6 valid workouts` : 'Incomplete data';
+            html += '<tr style="opacity: 0.5; border-top: 2px solid #ff6b6b;">';
+            html += '<td style="color: #ff6b6b;">-</td>';
+            html += `<td>${team.team_name}</td>`;
+            html += `<td style="color: #ff6b6b;" title="${reason}">Not Valid</td>`;
+            html += `<td>${team.valid_workouts}/6</td>`;
+            html += `<td>${team.valid_females}F / ${team.valid_males}M</td>`;
+            html += '</tr>';
+        });
+    }
+    
+    html += '</tbody></table>';
+    
+    // Add legend
+    html += '<div style="margin-top: 30px; padding: 20px; background: #1a1a1a; border-radius: 8px; font-size: 13px;">';
+    html += '<p><strong>Scoring System:</strong></p>';
+    html += '<ul style="margin: 10px 0; padding-left: 20px;">';
+    html += '<li><strong>Workout Score:</strong> Best 3 female ranks + Best 3 male ranks</li>';
+    html += '<li><strong>Workout Validity:</strong> Requires 3+ valid athletes from each gender</li>';
+    html += '<li><strong>Valid Athlete:</strong> Completed 4+ workouts</li>';
+    html += '<li><strong>Team Total:</strong> Sum of best 4 valid workout scores</li>';
+    html += '<li style="color: #ff6b6b;"><strong>Not Valid:</strong> Team needs 4 valid workouts to have a total score</li>';
+    html += '</ul>';
+    if (metadata.sync_timestamp_readable) {
+        html += `<p style="margin-top: 15px; color: #999; font-size: 12px;">Last updated: ${metadata.sync_timestamp_readable}</p>`;
+    }
+    html += '</div>';
+    
+    container.innerHTML = html;
 }
 
 // ====================================
