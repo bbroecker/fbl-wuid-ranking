@@ -543,7 +543,8 @@ function showTab(tabName) {
     // Show selected tab
     const tabMapping = {
         'circle21': 'circle21-tab',
-        'circle21-workouts': 'circle21-workouts-tab'
+        'circle21-workouts': 'circle21-workouts-tab',
+        'team-breakdown': 'team-breakdown-tab'
     };
 
     const tabId = tabMapping[tabName];
@@ -560,6 +561,13 @@ function showTab(tabName) {
     } else if (tabName === 'circle21-workouts') {
         if (typeof displayCircle21Workouts === 'function') {
             displayCircle21Workouts();
+        }
+    } else if (tabName === 'team-breakdown') {
+        if (typeof populateTeamBreakdownSelect === 'function') {
+            populateTeamBreakdownSelect();
+        }
+        if (typeof displayTeamBreakdown === 'function') {
+            displayTeamBreakdown();
         }
     }
 }

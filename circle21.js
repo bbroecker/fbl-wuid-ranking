@@ -796,6 +796,9 @@ function initializeCircle21Module() {
             populateCircle21WorkoutSelect();
             displayCircle21Workouts();
         }
+        if (document.getElementById('team-breakdown-display')) {
+            populateTeamBreakdownSelect();
+        }
     }
     
     console.log('Circle21: Module initialized');
@@ -1139,6 +1142,358 @@ function showToast(message) {
         // Fallback to alert
         alert(message);
     }
+}
+
+// ====================================
+// TEAM BREAKDOWN DISPLAY
+// ====================================
+
+function populateTeamBreakdownSelect() {
+    const selectEl = document.getElementById('teamBreakdownSelect');
+    if (!selectEl) return;
+    
+    let teams = [];
+    if (circle21Metadata && circle21Metadata.teams_tracked) {
+        teams = circle21Metadata.teams_tracked;
+    }
+    
+    selectEl.innerHTML = '<option value="" selected disabled>-- Select Team --</option>';
+    teams.forEach(teamName => {
+        const option = document.createElement('option');
+        option.value = teamName;
+        option.textContent = teamName;
+        selectEl.appendChild(option);
+    });
+}
+
+function displayTeamBreakdown() {
+    const selectEl = document.getElementById('teamBreakdownSelect');
+    const container = document.getElementById('team-breakdown-display');
+    
+    if (!selectEl || !container) return;
+    
+    const selectedTeam = selectEl.value;
+    
+    if (!selectedTeam) {
+        container.innerHTML = '<p>👆 Please select a team above</p>';
+        return;
+    }
+    
+    // Get all athletes from selected team
+    const allAthletes = getAllCircle21Athletes();
+    const teamAthletes = allAthletes.filter(a => a.team_name === selectedTeam);
+    
+    if (teamAthletes.length === 0) {
+        container.innerHTML = `<p>No athletes found for ${selectedTeam}</p>`;
+        return;
+    }
+    
+    // Separate by gender
+    const females = teamAthletes.filter(a => a.gender === 'F');
+    const males = teamAthletes.filter(a => a.gender === 'M');
+    
+    // Process athletes to calculate validity and best 4
+    const processAthlete = (athlete) => {
+        const workouts = athlete.workouts || {};
+        const workoutNames = ['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6'];
+        
+        // Get ranks for all workouts
+        const athleteWorkouts = {};
+        let completed = 0;
+        
+        workoutNames.forEach(wod => {
+            const wodData = workouts[wod];
+            if (wodData) {
+                const rank = typeof wodData === 'object' ? wodData.rank : wodData;
+                athleteWorkouts[wod] = rank;
+                if (rank) completed++;
+            } else {
+                athleteWorkouts[wod] = null;
+            }
+        });
+        
+        // Calculate best 4
+        const validWorkouts = [];
+        workoutNames.forEach(wod => {
+            if (athleteWorkouts[wod]) {
+                validWorkouts.push({ wod, rank: athleteWorkouts[wod] });
+            }
+        });
+        
+        validWorkouts.sort((a, b) => a.rank - b.rank);
+        const best4 = new Set(validWorkouts.slice(0, 4).map(w => w.wod));
+        
+        const score = validWorkouts.slice(0, 4).reduce((sum, w) => sum + w.rank, 0);
+        const valid = completed >= 4;
+        
+        return {
+            name: athlete.name,
+            workouts: athleteWorkouts,
+            completed,
+            best4,
+            score,
+            valid
+        };
+    };
+    
+    const processedFemales = females.map(processAthlete);
+    const processedMales = males.map(processAthlete);
+    
+    // Calculate workout scores and validity
+    const workoutNames = ['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6'];
+    const workoutScores = {};
+    const workoutValidity = {};
+    const workoutContributors = {}; // Track which athletes contribute to each workout
+    
+    workoutNames.forEach(wod => {
+        // Get all valid athletes who completed this workout
+        const validFemalesForWod = processedFemales.filter(a => a.valid && a.workouts[wod]);
+        const validMalesForWod = processedMales.filter(a => a.valid && a.workouts[wod]);
+        
+        // Sort by rank (lower is better) and take best 3
+        validFemalesForWod.sort((a, b) => a.workouts[wod] - b.workouts[wod]);
+        validMalesForWod.sort((a, b) => a.workouts[wod] - b.workouts[wod]);
+        
+        const best3Females = validFemalesForWod.slice(0, 3);
+        const best3Males = validMalesForWod.slice(0, 3);
+        
+        // Workout is valid if we have at least 3 females AND 3 males
+        const isValid = best3Females.length >= 3 && best3Males.length >= 3;
+        
+        // Calculate workout score (sum of best 3 from each gender)
+        const femaleScore = best3Females.reduce((sum, a) => sum + a.workouts[wod], 0);
+        const maleScore = best3Males.reduce((sum, a) => sum + a.workouts[wod], 0);
+        const totalWodScore = isValid ? (femaleScore + maleScore) : null;
+        
+        workoutScores[wod] = totalWodScore;
+        workoutValidity[wod] = isValid;
+        workoutContributors[wod] = {
+            females: new Set(best3Females.map(a => a.name)),
+            males: new Set(best3Males.map(a => a.name))
+        };
+    });
+    
+    // Find best 4 valid workouts for team total
+    const validWorkoutScores = [];
+    workoutNames.forEach(wod => {
+        if (workoutValidity[wod]) {
+            validWorkoutScores.push({ wod, score: workoutScores[wod] });
+        }
+    });
+    
+    validWorkoutScores.sort((a, b) => a.score - b.score);
+    const best4Workouts = new Set(validWorkoutScores.slice(0, 4).map(w => w.wod));
+    
+    // Calculate team total score
+    const teamTotalScore = validWorkoutScores.length >= 4 
+        ? validWorkoutScores.slice(0, 4).reduce((sum, w) => sum + w.score, 0)
+        : null;
+    
+    // Calculate team totals (for summary)
+    const validFemales = processedFemales.filter(a => a.valid);
+    const validMales = processedMales.filter(a => a.valid);
+    
+    const maleScore = validMales.reduce((sum, a) => sum + a.score, 0);
+    const femaleScore = validFemales.reduce((sum, a) => sum + a.score, 0);
+    
+    // Build HTML
+    let html = `<h2 style="text-align: center; margin-bottom: 20px;">${selectedTeam}</h2>`;
+    
+    // Build table
+    html += '<table class="leaderboard-table">';
+    html += '<thead><tr>';
+    html += '<th>Athlete</th>';
+    html += '<th>Status</th>';
+    workoutNames.forEach(wod => {
+        const isValid = workoutValidity[wod];
+        const borderStyle = isValid ? '' : 'border-left: 2px solid #ff6b6b; border-right: 2px solid #ff6b6b;';
+        html += `<th style="${borderStyle}">${wod}</th>`;
+    });
+    html += '<th>Score</th>';
+    html += '<th>Completed</th>';
+    html += '</tr></thead><tbody>';
+    
+    // Female athletes first
+    if (processedFemales.length > 0) {
+        html += '<tr><td colspan="10" style="background: #1a1a1a; font-weight: bold; padding: 8px; font-size: 13px;">FEMALE ATHLETES</td></tr>';
+        
+        processedFemales.forEach(athlete => {
+            const rowBorder = athlete.valid ? '' : 'border-top: 2px solid #ff6b6b; border-bottom: 2px solid #ff6b6b;';
+            const rowOpacity = athlete.valid ? '' : ' opacity: 0.5;';
+            const status = athlete.valid ? '✓ COUNTS' : '✗ INVALID';
+            const statusStyle = athlete.valid ? '' : 'color: #ff6b6b;';
+            const statusTitle = athlete.valid ? 
+                'Completed 4+ workouts, counts toward team score' : 
+                'Completed less than 4 workouts, does NOT count';
+            
+            html += `<tr style="${rowBorder}${rowOpacity}">`;
+            html += `<td style="font-size: 13px;">${athlete.name}</td>`;
+            html += `<td style="${statusStyle}" title="${statusTitle}">${status}</td>`;
+            
+            workoutNames.forEach(wod => {
+                const rank = athlete.workouts[wod];
+                const isWorkoutValid = workoutValidity[wod];
+                const isContributor = athlete.valid && workoutContributors[wod]?.females.has(athlete.name);
+                const isSelectedWorkout = best4Workouts.has(wod);
+                const columnBorder = isWorkoutValid ? '' : 'border-left: 2px solid #ff6b6b; border-right: 2px solid #ff6b6b;';
+                
+                // Blue font + bold if this athlete contributes to a selected workout
+                const shouldHighlight = isContributor && isSelectedWorkout && isWorkoutValid;
+                
+                if (!rank) {
+                    html += `<td style="opacity: 0.4; ${columnBorder}">DNF</td>`;
+                } else {
+                    let cellStyle = columnBorder;
+                    let cellTitle = '';
+                    
+                    if (shouldHighlight) {
+                        cellStyle += ' color: #008AC2; font-weight: bold;';
+                        cellTitle = 'Contributes to team total (best 3 in selected workout)';
+                    } else {
+                        cellStyle += ' opacity: 0.5;';
+                        cellTitle = 'Does not count toward team total';
+                    }
+                    
+                    html += `<td style="${cellStyle}" title="${cellTitle}">#${rank}</td>`;
+                }
+            });
+            
+            html += `<td>${athlete.score}</td>`;
+            html += `<td>${athlete.completed}/6</td>`;
+            html += '</tr>';
+        });
+    }
+    
+    // Male athletes
+    if (processedMales.length > 0) {
+        html += '<tr><td colspan="10" style="background: #1a1a1a; font-weight: bold; padding: 8px; font-size: 13px;">MALE ATHLETES</td></tr>';
+        
+        processedMales.forEach(athlete => {
+            const rowBorder = athlete.valid ? '' : 'border-top: 2px solid #ff6b6b; border-bottom: 2px solid #ff6b6b;';
+            const rowOpacity = athlete.valid ? '' : ' opacity: 0.5;';
+            const status = athlete.valid ? '✓ COUNTS' : '✗ INVALID';
+            const statusStyle = athlete.valid ? '' : 'color: #ff6b6b;';
+            const statusTitle = athlete.valid ? 
+                'Completed 4+ workouts, counts toward team score' : 
+                'Completed less than 4 workouts, does NOT count';
+            
+            html += `<tr style="${rowBorder}${rowOpacity}">`;
+            html += `<td style="font-size: 13px;">${athlete.name}</td>`;
+            html += `<td style="${statusStyle}" title="${statusTitle}">${status}</td>`;
+            
+            workoutNames.forEach(wod => {
+                const rank = athlete.workouts[wod];
+                const isWorkoutValid = workoutValidity[wod];
+                const isContributor = athlete.valid && workoutContributors[wod]?.males.has(athlete.name);
+                const isSelectedWorkout = best4Workouts.has(wod);
+                const columnBorder = isWorkoutValid ? '' : 'border-left: 2px solid #ff6b6b; border-right: 2px solid #ff6b6b;';
+                
+                // Blue font + bold if this athlete contributes to a selected workout
+                const shouldHighlight = isContributor && isSelectedWorkout && isWorkoutValid;
+                
+                if (!rank) {
+                    html += `<td style="opacity: 0.4; ${columnBorder}">DNF</td>`;
+                } else {
+                    let cellStyle = columnBorder;
+                    let cellTitle = '';
+                    
+                    if (shouldHighlight) {
+                        cellStyle += ' color: #008AC2; font-weight: bold;';
+                        cellTitle = 'Contributes to team total (best 3 in selected workout)';
+                    } else {
+                        cellStyle += ' opacity: 0.5;';
+                        cellTitle = 'Does not count toward team total';
+                    }
+                    
+                    html += `<td style="${cellStyle}" title="${cellTitle}">#${rank}</td>`;
+                }
+            });
+            
+            html += `<td>${athlete.score}</td>`;
+            html += `<td>${athlete.completed}/6</td>`;
+            html += '</tr>';
+        });
+    }
+    
+    // Workout Score Row
+    html += '<tr style="background: #2a2a2a;">';
+    html += '<td colspan="2" style="font-weight: bold;">Workout Score</td>';
+    workoutNames.forEach(wod => {
+        const score = workoutScores[wod];
+        const isSelected = best4Workouts.has(wod);
+        const isValid = workoutValidity[wod];
+        const columnBorder = isValid ? '' : 'border-left: 2px solid #ff6b6b; border-right: 2px solid #ff6b6b;';
+        const cellStyle = isSelected ? `color: #008AC2; font-weight: bold; ${columnBorder}` : columnBorder;
+        const cellTitle = isSelected ? 'Selected for team total (best 4 valid workouts)' : 'Not selected';
+        
+        if (score !== null) {
+            html += `<td style="${cellStyle}" title="${cellTitle}">${score}</td>`;
+        } else {
+            html += `<td style="opacity: 0.4; ${columnBorder}">-</td>`;
+        }
+    });
+    
+    // Total Score in the intersection of Workout Score row and Total column
+    const totalDisplay = teamTotalScore !== null ? teamTotalScore : 'N/A';
+    const totalTitle = teamTotalScore !== null 
+        ? `Team Total: Sum of best 4 valid workouts (${validWorkoutScores.length} valid total)` 
+        : `Need 4 valid workouts (only ${validWorkoutScores.length} valid)`;
+    html += `<td colspan="2" style="text-align: center; color: #008AC2; font-weight: bold; font-size: 18px;" title="${totalTitle}">${totalDisplay}</td>`;
+    html += '</tr>';
+    
+    // Workout Validity Row
+    html += '<tr style="background: #2a2a2a;">';
+    html += '<td colspan="2" style="font-weight: bold;">Workout Validity</td>';
+    workoutNames.forEach(wod => {
+        const isValid = workoutValidity[wod];
+        const validFemalesForWod = processedFemales.filter(a => a.valid && a.workouts[wod]);
+        const validMalesForWod = processedMales.filter(a => a.valid && a.workouts[wod]);
+        const femaleCount = Math.min(3, validFemalesForWod.length);
+        const maleCount = Math.min(3, validMalesForWod.length);
+        const columnBorder = isValid ? '' : 'border-left: 2px solid #ff6b6b; border-right: 2px solid #ff6b6b; border-bottom: 2px solid #ff6b6b;';
+        
+        const cellStyle = isValid ? `color: #4CAF50; ${columnBorder}` : `color: #ff6b6b; ${columnBorder}`;
+        const cellTitle = `${femaleCount} females, ${maleCount} males (need 3 of each)`;
+        
+        html += `<td style="${cellStyle}" title="${cellTitle}">${isValid ? '✓ Valid' : '✗ Invalid'}</td>`;
+    });
+    html += '<td colspan="2"></td>';
+    html += '</tr>';
+    
+    html += '</tbody></table>';
+    
+    // Team summary
+    html += '<div style="margin-top: 30px; padding: 20px; background: #1a1a1a; border-radius: 8px;">';
+    html += '<h3 style="margin-top: 0;">Team Summary</h3>';
+    html += `<p><strong>Valid Male Athletes:</strong> ${validMales.length}/${processedMales.length}</p>`;
+    html += `<p><strong>Valid Female Athletes:</strong> ${validFemales.length}/${processedFemales.length}</p>`;
+    html += `<p><strong>Valid Workouts:</strong> ${validWorkoutScores.length}/6</p>`;
+    
+    if (validWorkoutScores.length >= 4) {
+        const best4List = validWorkoutScores.slice(0, 4).map(w => `${w.wod} (${w.score})`).join(', ');
+        html += `<p><strong>Best 4 Workouts:</strong> ${best4List}</p>`;
+    }
+    
+    html += `<p style="font-size: 18px; color: #008AC2;"><strong>TOTAL TEAM SCORE:</strong> ${teamTotalScore !== null ? teamTotalScore : 'N/A'}</p>`;
+    
+    if (teamTotalScore === null) {
+        html += `<p style="color: #ff6b6b;"><em>⚠️ Team needs 4 valid workouts to have a total score (currently has ${validWorkoutScores.length})</em></p>`;
+    }
+    
+    html += '<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333; font-size: 12px; opacity: 0.8;">';
+    html += '<p><strong>Legend:</strong></p>';
+    html += '<p><span style="color: #008AC2; font-weight: bold;">#rank</span> = Contributes to team total (best 3 from each gender in best 4 workouts)</p>';
+    html += '<p>Faded #rank = Does not count toward team total</p>';
+    html += '<p>DNF = Did not finish / No result</p>';
+    html += '<p>✓ COUNTS = Athlete completed 4+ workouts, eligible to contribute to team</p>';
+    html += '<p>✗ INVALID = Athlete completed &lt;4 workouts, cannot contribute to team</p>';
+    html += '<p><strong>Workout Score:</strong> Sum of best 3 female ranks + best 3 male ranks</p>';
+    html += '<p><strong>Workout Validity:</strong> Needs at least 3 females AND 3 males to be valid</p>';
+    html += '<p><strong>Team Total:</strong> Sum of best 4 valid workout scores</p>';
+    html += '</div>';
+    html += '</div>';
+    
+    container.innerHTML = html;
 }
 
 // Initialize when page loads
