@@ -547,6 +547,7 @@ function showTab(tabName) {
         'workout': 'workout-tab',
         'overall': 'overall-tab',
         'circle21': 'circle21-tab',
+        'circle21-workouts': 'circle21-workouts-tab',
         'manage': 'manage-tab',
         'export': 'export-tab'
     };
@@ -565,6 +566,10 @@ function showTab(tabName) {
     } else if (tabName === 'circle21') {
         if (typeof displayCircle21Leaderboard === 'function') {
             displayCircle21Leaderboard();
+        }
+    } else if (tabName === 'circle21-workouts') {
+        if (typeof displayCircle21Workouts === 'function') {
+            displayCircle21Workouts();
         }
     }
 }

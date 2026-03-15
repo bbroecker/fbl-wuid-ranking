@@ -527,6 +527,16 @@ function sortCircle21(column) {
 // Circle21 Workout Details Display
 // ====================================
 
+// Workout specifications (type and details)
+const WORKOUT_SPECS = {
+    'LQ1': { type: 'fortime', timecap: 1200000, totalReps: 150 }, // 20min cap, 150 reps total
+    'LQ2': { type: 'maxweight', unit: 'kg' },
+    'LQ3': { type: 'fortime', timecap: 1200000, totalReps: 285 }, // 20min cap
+    'LQ4': { type: 'fortime', timecap: 720000, totalReps: 246 }, // 12min cap
+    'LQ5': { type: 'fortime', timecap: 900000, totalReps: 132 }, // 15min cap, 132 reps total
+    'LQ6': { type: 'amrap', timecap: 1200000, totalReps: null } // AMRAP - reps matter, show tiebreak
+};
+
 // Format time from milliseconds to MM:SS
 function formatWorkoutTime(milliseconds) {
     if (!milliseconds) return '-';
@@ -608,6 +618,12 @@ function displayCircle21Workouts() {
         // Sort by rank
         workoutResults.sort((a, b) => (a.rank || 9999) - (b.rank || 9999));
         
+        // Get workout specifications
+        const workoutSpec = WORKOUT_SPECS[selectedWorkout] || {};
+        const isMaxWeight = workoutSpec.type === 'maxweight';
+        const isForTime = workoutSpec.type === 'fortime';
+        const isAmrap = workoutSpec.type === 'amrap';
+        
         // Build table
         let html = `<div style="text-align: center; color: #999; font-size: 13px; margin-bottom: 15px; padding: 8px; background: #1a1a1a; border-radius: 4px;">
             ${selectedWorkout} Results - ${workoutResults.length} athlete${workoutResults.length !== 1 ? 's' : ''}
@@ -619,8 +635,14 @@ function displayCircle21Workouts() {
         html += '<th>Name</th>';
         html += '<th>Team</th>';
         html += '<th>Time</th>';
-        html += '<th>Reps</th>';
-        html += '<th>Weight</th>';
+        
+        // Adjust column headers based on workout type
+        if (isMaxWeight) {
+            html += `<th>Weight (${workoutSpec.unit || 'kg'})</th>`;
+        } else {
+            html += '<th>Reps</th>';
+        }
+        
         html += '</tr></thead><tbody>';
         
         workoutResults.forEach(result => {
@@ -629,8 +651,36 @@ function displayCircle21Workouts() {
             html += `<td>${result.name}</td>`;
             html += `<td style="color: #999;">${result.team}</td>`;
             html += `<td style="text-align: center;">${formatWorkoutTime(result.time)}</td>`;
-            html += `<td style="text-align: center;">${result.reps !== null && result.reps !== undefined ? result.reps : '-'}</td>`;
-            html += `<td style="text-align: center;">${result.weight !== null && result.weight !== undefined ? result.weight + ' lbs' : '-'}</td>`;
+            
+            // Display reps or weight based on workout type
+            if (isMaxWeight) {
+                // Show weight for max weight workouts
+                // Circle21 API stores weight in the reps field for max weight workouts
+                const weightValue = result.weight !== null && result.weight !== undefined 
+                    ? result.weight 
+                    : (result.reps !== null && result.reps !== undefined ? result.reps : '-');
+                html += `<td style="text-align: center;">${weightValue !== '-' ? weightValue + ' kg' : '-'}</td>`;
+            } else {
+                // For "for time" and AMRAP workouts
+                let repsDisplay = '-';
+                if (result.reps !== null && result.reps !== undefined && result.reps > 0) {
+                    // Show actual reps completed
+                    repsDisplay = result.reps;
+                    // Show tiebreak for AMRAP or incomplete "for time" workouts
+                    if (result.tiebreak) {
+                        const showTiebreak = isAmrap || (workoutSpec.totalReps && result.reps < workoutSpec.totalReps);
+                        if (showTiebreak) {
+                            const tiebreakTime = formatWorkoutTime(result.tiebreak);
+                            repsDisplay += ` (${tiebreakTime})`;
+                        }
+                    }
+                } else if (isForTime && workoutSpec.totalReps && result.time && result.time <= workoutSpec.timecap) {
+                    // Finished at or before time cap = completed all reps
+                    repsDisplay = workoutSpec.totalReps;
+                }
+                html += `<td style="text-align: center;">${repsDisplay}</td>`;
+            }
+            
             html += '</tr>';
         });
         
@@ -649,10 +699,15 @@ function displayCircle21Workouts() {
 // Populate workout select dropdown
 function populateCircle21WorkoutSelect() {
     const workoutSelectEl = document.getElementById('circle21WorkoutSelect');
-    if (!workoutSelectEl) return;
+    if (!workoutSelectEl) {
+        console.log('Circle21 Workouts: Workout select element not found');
+        return;
+    }
     
     // Get unique workout names from athlete data
     const allAthletes = getAllCircle21Athletes();
+    console.log('Circle21 Workouts: Total athletes for workout list:', allAthletes.length);
+    
     const workoutSet = new Set();
     
     allAthletes.forEach(athlete => {
@@ -665,6 +720,8 @@ function populateCircle21WorkoutSelect() {
     
     const workouts = Array.from(workoutSet).sort();
     
+    console.log(`Circle21 Workouts: Found ${workouts.length} unique workouts:`, workouts);
+    
     // Clear and populate
     workoutSelectEl.innerHTML = '<option value="" selected disabled>-- Select Workout --</option>';
     workouts.forEach(wod => {
@@ -674,18 +731,24 @@ function populateCircle21WorkoutSelect() {
         workoutSelectEl.appendChild(option);
     });
     
-    console.log(`Circle21 Workouts: Populated workout select with ${workouts.length} workouts:`, workouts);
+    console.log(`Circle21 Workouts: Populated workout select with ${workouts.length} workouts`);
 }
 
 // Populate team filter for workouts tab
 function populateCircle21WorkoutsTeamFilter() {
     const teamFilterEl = document.getElementById('circle21WorkoutsTeamFilter');
-    if (!teamFilterEl) return;
+    if (!teamFilterEl) {
+        console.log('Circle21 Workouts: Team filter element not found');
+        return;
+    }
     
     // Get teams from metadata
     let teams = [];
     if (circle21Metadata && circle21Metadata.teams_tracked) {
         teams = circle21Metadata.teams_tracked;
+        console.log('Circle21 Workouts: Using teams:', teams);
+    } else {
+        console.log('Circle21 Workouts: No teams in metadata');
     }
     
     // Clear and populate
@@ -696,6 +759,8 @@ function populateCircle21WorkoutsTeamFilter() {
         option.textContent = teamName;
         teamFilterEl.appendChild(option);
     });
+    
+    console.log(`Circle21 Workouts: Populated team filter with ${teams.length} teams`);
 }
 
 // ====================================
