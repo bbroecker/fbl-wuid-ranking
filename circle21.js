@@ -402,11 +402,12 @@ function displayCircle21Leaderboard() {
     }
     
     // Build table
+    const showTeamCol = teamFilter === 'all';
     html += '<div class="table-container"><table>';
     html += '<thead><tr>';
     html += `<th onclick="sortCircle21('overall')" style="cursor: pointer;">Overall ${circle21SortColumn === 'overall' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
     html += `<th onclick="sortCircle21('name')" style="cursor: pointer;">Name ${circle21SortColumn === 'name' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
-    html += `<th onclick="sortCircle21('team_name')" style="cursor: pointer;">Team ${circle21SortColumn === 'team_name' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
+    if (showTeamCol) html += `<th onclick="sortCircle21('team_name')" style="cursor: pointer;">Team ${circle21SortColumn === 'team_name' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
     html += `<th onclick="sortCircle21('LQ1')" style="cursor: pointer;">LQ1 ${circle21SortColumn === 'LQ1' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
     html += `<th onclick="sortCircle21('LQ2')" style="cursor: pointer;">LQ2 ${circle21SortColumn === 'LQ2' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
     html += `<th onclick="sortCircle21('LQ3')" style="cursor: pointer;">LQ3 ${circle21SortColumn === 'LQ3' ? (circle21SortAscending ? '▲' : '▼') : ''}</th>`;
@@ -446,7 +447,7 @@ function displayCircle21Leaderboard() {
         html += `<tr class="${rankClass}">`;
         html += `<td><strong>#${athlete.overall}</strong></td>`;
         html += `<td><strong>${athlete.name}</strong></td>`;
-        html += `<td style="color: #999; font-size: 13px;">${athlete.team_name || '-'}</td>`;
+        if (showTeamCol) html += `<td style="color: #999; font-size: 13px;">${athlete.team_name || '-'}</td>`;
         
         // Display workouts with blue highlighting for best 4
         ['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6'].forEach(wod => {
@@ -629,11 +630,12 @@ function displayCircle21Workouts() {
             ${selectedWorkout} Results - ${workoutResults.length} athlete${workoutResults.length !== 1 ? 's' : ''}
         </div>`;
         
+        const showTeamColW = teamFilter === 'all';
         html += '<div class="table-container"><table>';
         html += '<thead><tr>';
         html += '<th>Rank</th>';
         html += '<th>Name</th>';
-        html += '<th>Team</th>';
+        if (showTeamColW) html += '<th>Team</th>';
         html += '<th>Time</th>';
         
         // Adjust column headers based on workout type
@@ -649,7 +651,7 @@ function displayCircle21Workouts() {
             html += '<tr>';
             html += `<td style="text-align: center; font-weight: bold;">#${result.rank || '-'}</td>`;
             html += `<td>${result.name}</td>`;
-            html += `<td style="color: #999;">${result.team}</td>`;
+            if (showTeamColW) html += `<td style="color: #999;">${result.team}</td>`;
             html += `<td style="text-align: center;">${formatWorkoutTime(result.time)}</td>`;
             
             // Display reps or weight based on workout type
