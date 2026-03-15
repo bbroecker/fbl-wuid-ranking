@@ -1598,7 +1598,8 @@ async function displayTeamLeaderboard() {
     
     // Build HTML
     let html = '<h2 style="text-align: center; margin-bottom: 20px;">🏆 Team Leaderboard</h2>';
-    html += '<p style="text-align: center; color: #999; margin-bottom: 30px;">Based on best 4 out of 6 workouts (each workout = best 3F + best 3M)</p>';
+    html += '<p style="text-align: center; color: #999; margin-bottom: 10px;">Based on best 4 out of 6 workouts (each workout = best 3F + best 3M)</p>';
+    html += '<div style="background: #2a2000; border: 1px solid #665500; border-radius: 8px; padding: 10px 16px; margin: 0 auto 24px; max-width: 700px; color: #ccaa44; font-size: 0.85em; text-align: center;">⚠️ <strong>Disclaimer:</strong> This is a reverse-engineered leaderboard based on the Circle21 API. Scoring logic may not be 100% accurate and should be treated as unofficial/approximate.</div>';
     
     html += '<table class="leaderboard-table">';
     html += '<thead><tr>';
