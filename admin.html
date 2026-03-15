@@ -828,53 +828,45 @@
             <!-- CIRCLE21 TRACKING TAB -->
             <div id="circle21-tab" class="tab-content" style="display: none;">
                 <div class="form-section">
-                    <h3>Circle21 Competition Tracking</h3>
-                    <p style="color: #999; margin-bottom: 20px;">Manage which athletes are tracked in the Circle21 competition. Changes sync automatically to the leaderboard.</p>
+                    <h3>Circle21 Team Tracking</h3>
+                    <p style="color: #999; margin-bottom: 20px;">Manage which teams are tracked in the Circle21 competition. All team members are automatically discovered and synced.</p>
                     
                     <div class="form-group">
-                        <h4 style="margin-bottom: 15px;">➕ Add New Athlete</h4>
-                        <div style="display: grid; grid-template-columns: 2fr 1fr 1.5fr auto; gap: 10px; align-items: end;">
+                        <h4 style="margin-bottom: 15px;">➕ Add New Team</h4>
+                        <div style="display: grid; grid-template-columns: 2fr 2fr auto; gap: 10px; align-items: end;">
                             <div>
-                                <label>Athlete Name</label>
-                                <input type="text" id="circle21-athlete-name" placeholder="e.g., Max Mustermann" style="width: 100%;">
+                                <label>Team Name</label>
+                                <input type="text" id="circle21-team-name" placeholder="e.g., CrossFit WUID 1" style="width: 100%;">
                             </div>
                             <div>
-                                <label>Gender</label>
-                                <select id="circle21-athlete-gender" style="width: 100%;">
-                                    <option value="">Select...</option>
-                                    <option value="M">Male (M)</option>
-                                    <option value="F">Female (F)</option>
-                                </select>
+                                <label>Team ID</label>
+                                <input type="text" id="circle21-team-id" placeholder="e.g., ff20e796-8ad9-4ade-a371-c35e9960cc8c" style="width: 100%;">
+                                <small style="color: #888; font-size: 11px;">Find on Circle21 team page URL</small>
                             </div>
                             <div>
-                                <label>Identifier (optional)</label>
-                                <input type="text" id="circle21-athlete-identifier" placeholder="Age or partial user_id" style="width: 100%;">
-                                <small style="color: #888; font-size: 11px;">Only needed for duplicates</small>
-                            </div>
-                            <div>
-                                <button onclick="addCircle21Athlete()" style="padding: 10px 20px; background: #008AC2; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: 600;">
-                                    Add Athlete
+                                <button onclick="addCircle21Team()" style="padding: 10px 20px; background: #008AC2; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: 600;">
+                                    Add Team
                                 </button>
                             </div>
                         </div>
                     </div>
 
                     <div class="form-group" style="margin-top: 30px;">
-                        <h4 style="margin-bottom: 15px;">📋 Currently Tracked Athletes (<span id="circle21-count">0</span>)</h4>
-                        <div id="circle21-athletes-list" style="max-height: 500px; overflow-y: auto;">
+                        <h4 style="margin-bottom: 15px;">📋 Currently Tracked Teams (<span id="circle21-teams-count">0</span>)</h4>
+                        <div id="circle21-teams-list" style="max-height: 500px; overflow-y: auto;">
                             <p style="color: #888; text-align: center; padding: 20px;">Loading...</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="info-box">
-                    <h3>ℹ️ About Circle21 Tracking</h3>
+                    <h3>ℹ️ About Team-Based Tracking</h3>
                     <ul>
-                        <li><strong>Auto-sync:</strong> GitHub Actions syncs every 20 minutes automatically</li>
-                        <li><strong>Identifier field:</strong> Use age (e.g., <code>31</code>) or partial user_id (e.g., <code>70fe83b7</code>) to distinguish duplicates</li>
-                        <li><strong>Check before adding:</strong> Use <code>python3 check_athlete.py "Name" M/F</code> to verify athlete exists</li>
-                        <li><strong>Changes take effect:</strong> Next sync will use the updated list from Firebase</li>
-                        <li><strong>Fallback:</strong> If Firebase fails, script uses hardcoded list as backup</li>
+                        <li><strong>Auto-discovery:</strong> All team members are automatically fetched from Circle21 API</li>
+                        <li><strong>No manual updates:</strong> When athletes join/leave teams on Circle21, sync picks up changes automatically</li>
+                        <li><strong>Auto-sync:</strong> GitHub Actions syncs every 20 minutes</li>
+                        <li><strong>Team ID:</strong> Found in Circle21 team page URL (last part after /teams/)</li>
+                        <li><strong>Changes take effect:</strong> Next sync will use the updated team list from Firebase</li>
                     </ul>
                 </div>
             </div>

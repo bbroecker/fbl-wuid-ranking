@@ -13,23 +13,17 @@ from datetime import datetime
 # CONFIGURATION
 # ====================
 
-# Athletes to track - format: ("Name", "Gender", optional_identifier)
-# Gender: "M" for Male, "F" for Female
-# Optional identifier: Can be age (int), or partial user_id (str) to resolve duplicates
+# Teams to track - format: {"Team Name": "team_id"}
+TEAMS_TO_TRACK = {
+    "CrossFit WUID 1": "ff20e796-8ad9-4ade-a371-c35e9960cc8c",
+    "CrossFit WUID 2": "7214e07a-285f-4644-a396-1d8757c66914"
+}
+
+# Legacy: Individual athletes to track (DEPRECATED - use teams instead)
+# Kept for backwards compatibility, will be merged with team rosters
 ATHLETES_TO_TRACK = [
-    ("Bastian Broecker", "M"),
-    ("Thomas Reppa", "M"),
-    ("Mathias Edfelder", "M"),
-    ("Philipp Singer", "M"),
-    ("Daniel Kerscher", "M"),
-    ("Julian Huber", "M"),
-    ("Christoph Callegari", "M"),
-    ("Juliane Hauffe", "F"),
-    ("Birgit Geißinger", "F"),
-    ("Corinna Grünke", "F"),
-    ("Tom Otto", "M", "70fe83b7"),  # Partial user_id to select the top-ranked Tom Otto
-    ("Lydia K", "F"),
-    # Add more athletes here...
+    # Athletes not in a team can still be tracked individually
+    # Format: ("Name", "Gender", optional_identifier)
 ]
 
 # Firebase configuration
@@ -51,6 +45,45 @@ CIRCLE21_API = {
 # ====================
 # FUNCTIONS
 # ====================
+
+def fetch_team_members(team_id):
+    """Fetch team members from Circle21 API"""
+    url = f"https://api.circle21.events/api/teams/{team_id}/member"
+    
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={'Authorization': f"Bearer {CIRCLE21_API['bearer_token']}"}
+        )
+        
+        with urllib.request.urlopen(req, timeout=15) as response:
+            data = json.loads(response.read().decode())
+            
+        # Extract athlete info from member list
+        athletes = []
+        if isinstance(data, list):
+            for member in data:
+                if 'athlete' in member:
+                    athlete = member['athlete']
+                    user = athlete.get('user', {})
+                    
+                    name = user.get('name')
+                    gender_raw = user.get('gender', '').lower()  # 'm' or 'f' (lowercase)
+                    gender = gender_raw.upper() if gender_raw in ['m', 'f'] else None
+                    
+                    if name and gender:
+                        athletes.append({
+                            'name': name,
+                            'gender': gender,
+                            'user_id': athlete.get('user_id')
+                        })
+        
+        return athletes
+        
+    except Exception as e:
+        print(f"  ❌ Error fetching team members: {e}")
+        return []
+
 
 def fetch_circle21_leaderboard(gender):
     """
@@ -314,6 +347,42 @@ def fetch_athletes_from_firebase():
         return None
 
 
+def fetch_teams_from_firebase():
+    """Fetch team list from Firebase config
+    
+    Returns:
+        Dict in format: {team_name: team_id}
+        Returns None if not found or on error
+    """
+    firebase_url = f"{FIREBASE_CONFIG['databaseURL']}/circle21/config/teams_to_track.json?auth={FIREBASE_CONFIG['apiKey']}"
+    
+    try:
+        req = urllib.request.Request(firebase_url)
+        with urllib.request.urlopen(req, timeout=10) as response:
+            data = json.loads(response.read().decode())
+            
+            if data is None:
+                return None
+            
+            # Convert list format to dict
+            if isinstance(data, list):
+                teams_dict = {}
+                for team in data:
+                    if 'name' in team and 'id' in team:
+                        teams_dict[team['name']] = team['id']
+                return teams_dict if teams_dict else None
+            
+            # Already dict format
+            elif isinstance(data, dict):
+                return data
+            
+            return None
+    
+    except Exception as e:
+        # Silently fail - will use fallback
+        return None
+
+
 def update_firebase(athletes_data):
     """Update Firebase Realtime Database with athlete data"""
     firebase_url = f"{FIREBASE_CONFIG['databaseURL']}/circle21/leaderboard.json?auth={FIREBASE_CONFIG['apiKey']}"
@@ -339,95 +408,144 @@ def update_firebase(athletes_data):
 def sync_circle21_data():
     """Main sync function"""
     print("\n" + "="*60)
-    print("🏆 Circle21 Sync Script")
+    print("🏆 Circle21 Sync Script (Team-Based)")
     print("="*60)
     
-    # Try to fetch athletes from Firebase first
-    print(f"\n📥 Checking for athlete list in Firebase...")
-    athletes_to_track = fetch_athletes_from_firebase()
+    # Try to fetch teams from Firebase first
+    print(f"\n📥 Checking for team list in Firebase...")
+    teams_to_track = fetch_teams_from_firebase()
     
-    if athletes_to_track:
-        print(f"✅ Using athlete list from Firebase ({len(athletes_to_track)} athletes)")
+    if teams_to_track:
+        print(f"✅ Using team list from Firebase ({len(teams_to_track)} teams)")
     else:
-        print(f"⚠️  No athletes in Firebase, using hardcoded list")
-        athletes_to_track = ATHLETES_TO_TRACK
+        print(f"⚠️  No teams in Firebase, using hardcoded list")
+        teams_to_track = TEAMS_TO_TRACK
     
-    print(f"📋 Athletes to track: {len(athletes_to_track)}")
-    
-    if not athletes_to_track:
-        print("⚠️  No athletes configured! Add athletes to Firebase or ATHLETES_TO_TRACK list.")
+    if not teams_to_track:
+        print("⚠️  No teams configured! Add teams to Firebase or TEAMS_TO_TRACK dict.")
         return False
     
-    # Group by gender (handle both 2-tuple and 3-tuple formats)
-    male_athletes = [entry[0] for entry in athletes_to_track if entry[1] == "M"]
-    female_athletes = [entry[0] for entry in athletes_to_track if entry[1] == "F"]
+    # Fetch team rosters from Circle21
+    print(f"\n🏃 Fetching team rosters from Circle21...")
+    team_rosters = {}  # {team_name: [athlete_dict, ...]}
+    
+    for team_name, team_id in teams_to_track.items():
+        print(f"   • {team_name}...")
+        members = fetch_team_members(team_id)
+        if members:
+            team_rosters[team_name] = members
+            males = sum(1 for m in members if m['gender'] == 'M')
+            females = sum(1 for m in members if m['gender'] == 'F')
+            print(f"     ✅ {len(members)} members ({males}M, {females}F)")
+        else:
+            team_rosters[team_name] = []
+            print(f"     ⚠️  No members found")
+    
+    # Build complete athlete list with team associations
+    athletes_by_name = {}  # {name: {gender, team_name, user_id}}
+    
+    for team_name, members in team_rosters.items():
+        for member in members:
+            name = member['name']
+            # If duplicate name, keep first occurrence (or could merge)
+            if name not in athletes_by_name:
+                athletes_by_name[name] = {
+                    'name': name,
+                    'gender': member['gender'],
+                    'team_name': team_name,
+                    'user_id': member.get('user_id')
+                }
+    
+    # Add any manually tracked athletes (legacy)
+    for entry in ATHLETES_TO_TRACK:
+        name = entry[0]
+        gender = entry[1]
+        if name not in athletes_by_name:
+            athletes_by_name[name] = {
+                'name': name,
+                'gender': gender,
+                'team_name': None,  # No team
+                'identifier': entry[2] if len(entry) > 2 else None
+            }
+    
+    print(f"\n📋 Total unique athletes to track: {len(athletes_by_name)}")
+    males = sum(1 for a in athletes_by_name.values() if a['gender'] == 'M')
+    females = sum(1 for a in athletes_by_name.values() if a['gender'] == 'F')
+    print(f"   • Male: {males}")
+    print(f"   • Female: {females}")
     
     # Fetch leaderboards
-    print(f"\n🔄 Fetching data from Circle21 API...")
+    print(f"\n🔄 Fetching leaderboard data from Circle21 API...")
     male_data = None
     female_data = None
     
-    if male_athletes:
+    if males > 0:
         print(f"   Fetching male division...")
         male_data = fetch_circle21_leaderboard("M")
         if male_data:
             print(f"   ✅ Male data received ({len(male_data.get('athletes', []))} athletes)")
     
-    if female_athletes:
+    if females > 0:
         print(f"   Fetching female division...")
         female_data = fetch_circle21_leaderboard("F")
         if female_data:
             print(f"   ✅ Female data received ({len(female_data.get('athletes', []))} athletes)")
     
     # Process athletes
-    athletes_found = []
-    athletes_not_found = []
+    print(f"\n🔍 Processing athlete rankings...")
+    results = []
+    found_count = 0
+    not_found = []
     
-    print(f"\n🔍 Processing athletes...")
-    
-    for entry in athletes_to_track:
-        # Support both old format (name, gender) and new format (name, gender, identifier)
-        if len(entry) == 2:
-            name, gender = entry
-            identifier = None
-        elif len(entry) == 3:
-            name, gender, identifier = entry
-        else:
-            print(f"   ❌ Invalid entry format: {entry}")
-            continue
+    for name, athlete_info in athletes_by_name.items():
+        gender = athlete_info['gender']
+        team_name = athlete_info.get('team_name')
+        identifier = athlete_info.get('identifier')
         
         leaderboard_data = male_data if gender == "M" else female_data
+        
+        if not leaderboard_data:
+            not_found.append((name, gender, team_name))
+            continue
         
         athlete_data = find_athlete_data(name, gender, leaderboard_data, identifier)
         
         if athlete_data:
-            athletes_found.append(athlete_data)
+            # Add team information to athlete data
+            athlete_data['team_name'] = team_name
+            results.append(athlete_data)
+            found_count += 1
+            
             workouts_completed = athlete_data.get('workouts_completed', 0)
             score = athlete_data.get('overall_score', 0)
             score_display = f"{score} ({workouts_completed}/6)" if workouts_completed >= 4 else f"{score} ({workouts_completed}/6)*"
-            print(f"   ✅ {name} ({gender}) - Overall: #{athlete_data['overall']} | Score: {score_display}")
+            team_display = f" [{team_name}]" if team_name else ""
+            print(f"   ✅ {name} ({gender}){team_display} - Overall: #{athlete_data['overall']} | Score: {score_display}")
         else:
-            athletes_not_found.append((name, gender))
-            print(f"   ❌ {name} ({gender}) - Not found")
+            not_found.append((name, gender, team_name))
+            team_display = f" [{team_name}]" if team_name else ""
+            print(f"   ❌ {name} ({gender}){team_display} - Not found")
     
     # Summary
     print(f"\n📊 Summary:")
-    print(f"   Found: {len(athletes_found)}")
-    print(f"   Not Found: {len(athletes_not_found)}")
+    print(f"   Found: {found_count}")
+    print(f"   Not Found: {len(not_found)}")
     
-    if athletes_not_found:
+    if not_found:
         print(f"\n⚠️  Athletes not found:")
-        for name, gender in athletes_not_found:
-            print(f"      - {name} ({gender})")
+        for name, gender, team_name in not_found:
+            team_display = f" [{team_name}]" if team_name else ""
+            print(f"      - {name} ({gender}){team_display}")
     
     # Prepare data with metadata (total athlete counts per division)
     sync_data = {
-        'athletes': athletes_found,
+        'athletes': results,
         'metadata': {
             'total_athletes_male': len(male_data.get('athletes', [])) if male_data else 0,
             'total_athletes_female': len(female_data.get('athletes', [])) if female_data else 0,
             'last_sync': int(datetime.now().timestamp()),
-            'sync_timestamp_readable': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            'sync_timestamp_readable': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'teams_tracked': list(teams_to_track.keys())
         }
     }
     
@@ -436,7 +554,7 @@ def sync_circle21_data():
     if update_firebase(sync_data):
         print(f"✅ Firebase updated successfully!")
         print(f"\n✅ Sync completed!")
-        print(f"   {len(athletes_found)} athletes now in Firebase")
+        print(f"   {found_count} athletes now in Firebase")
         return True
     else:
         print(f"❌ Firebase update failed!")
