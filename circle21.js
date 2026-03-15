@@ -1145,7 +1145,7 @@ function showToast(message) {
 }
 
 // ====================================
-// TEAM BREAKDOWN DISPLAY
+// TEAM POINTS BREAKDOWN DISPLAY
 // ====================================
 
 function populateTeamBreakdownSelect() {
