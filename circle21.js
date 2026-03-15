@@ -53,6 +53,13 @@ function setupCircle21FirebaseListener() {
                     metadata: circle21Metadata
                 }));
                 
+                // Debug: log gender breakdown
+                const genderBreakdown = circle21AthleteCache.reduce((acc, a) => { 
+                    acc[a.gender] = (acc[a.gender] || 0) + 1; 
+                    return acc; 
+                }, {});
+                console.log(`Circle21: Loaded ${circle21AthleteCache.length} athletes from Firebase - Gender breakdown:`, genderBreakdown);
+                
                 // Update displays (only on user pages, not admin)
                 const isAdminPage = document.getElementById('circle21-athlete-name');
                 if (!isAdminPage && typeof displayCircle21AthletesList === 'function') {
@@ -263,19 +270,38 @@ let circle21SortColumn = 'overall';
 let circle21SortAscending = true;
 
 function displayCircle21Leaderboard() {
-    const container = document.getElementById('circle21-leaderboard-display');
-    if (!container) return;
-    
-    const genderFilterEl = document.getElementById('circle21GenderFilter');
-    const genderFilter = genderFilterEl ? genderFilterEl.value : '';
-    
-    // Check if no gender selected
-    if (!genderFilter || genderFilter === '') {
-        container.innerHTML = '<p style="text-align: center; color: #999; padding: 80px 40px; font-size: 16px;">👆 Please select a gender above to view the leaderboard</p>';
-        return;
-    }
-    
-    let athletes = getAllCircle21Athletes().filter(a => a.gender === genderFilter);
+    try {
+        const container = document.getElementById('circle21-leaderboard-display');
+        if (!container) {
+            console.log('Circle21 Leaderboard: Container not found');
+            return;
+        }
+        
+        const genderFilterEl = document.getElementById('circle21GenderFilter');
+        const genderFilter = genderFilterEl ? genderFilterEl.value : '';
+        
+        // Check if no gender selected
+        if (!genderFilter || genderFilter === '') {
+            container.innerHTML = '<p style="text-align: center; color: #999; padding: 80px 40px; font-size: 16px;">👆 Please select a gender above to view the leaderboard</p>';
+            return;
+        }
+        
+        const allAthletes = getAllCircle21Athletes();
+        console.log(`Circle21 Leaderboard: Total athletes loaded: ${allAthletes.length}`);
+        console.log(`Circle21 Leaderboard: Gender filter: "${genderFilter}"`);
+        console.log('Circle21 Leaderboard: Gender breakdown:', 
+            allAthletes.reduce((acc, a) => { 
+                const g = a.gender || 'undefined';
+                acc[g] = (acc[g] || 0) + 1; 
+                return acc; 
+            }, {}));
+        
+        let athletes = allAthletes.filter(a => a.gender === genderFilter);
+        console.log(`Circle21 Leaderboard: Filtered athletes (${genderFilter}): ${athletes.length}`);
+        
+        if (athletes.length > 0) {
+            console.log('Circle21 Leaderboard: First filtered athlete:', athletes[0]);
+        }
     
     if (athletes.length === 0) {
         const genderName = genderFilter === 'M' ? 'male' : 'female';
@@ -352,6 +378,15 @@ function displayCircle21Leaderboard() {
     
     html += '</tbody></table></div>';
     container.innerHTML = html;
+    console.log(`Circle21 Leaderboard: Successfully rendered ${athletes.length} athletes`);
+    
+    } catch (error) {
+        console.error('Circle21 Leaderboard: Error displaying leaderboard:', error);
+        const container = document.getElementById('circle21-leaderboard-display');
+        if (container) {
+            container.innerHTML = `<p style="text-align: center; color: #f44336; padding: 40px;">Error loading leaderboard. Check console for details.</p>`;
+        }
+    }
 }
 
 // Sort Circle21 athletes array
