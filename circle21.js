@@ -66,6 +66,7 @@ function setupCircle21FirebaseListener() {
                     displayCircle21AthletesList();
                 }
                 if (typeof displayCircle21Leaderboard === 'function') {
+                    populateCircle21TeamFilter();
                     displayCircle21Leaderboard();
                 }
                 
@@ -117,6 +118,53 @@ function getAllCircle21Athletes() {
         loadCircle21FromLocalStorage();
     }
     return circle21AthleteCache || [];
+}
+
+// Populate team filter dropdown dynamically
+function populateCircle21TeamFilter() {
+    const teamFilterEl = document.getElementById('circle21TeamFilter');
+    if (!teamFilterEl) return;
+    
+    // Store current selection
+    const currentSelection = teamFilterEl.value || 'all';
+    
+    // Get unique team names from metadata (preferred) or athlete data
+    let teams = [];
+    
+    // Try metadata first (has teams_tracked array)
+    if (circle21Metadata && circle21Metadata.teams_tracked) {
+        teams = circle21Metadata.teams_tracked;
+    } else {
+        // Fallback: extract unique team names from athlete data
+        const allAthletes = getAllCircle21Athletes();
+        const teamSet = new Set();
+        allAthletes.forEach(athlete => {
+            if (athlete.team_name && athlete.team_name !== 'null') {
+                teamSet.add(athlete.team_name);
+            }
+        });
+        teams = Array.from(teamSet).sort();
+    }
+    
+    // Clear existing options except "All Athletes"
+    teamFilterEl.innerHTML = '<option value="all">All Athletes</option>';
+    
+    // Add team options
+    teams.forEach(teamName => {
+        const option = document.createElement('option');
+        option.value = teamName;
+        option.textContent = teamName;
+        teamFilterEl.appendChild(option);
+    });
+    
+    // Restore previous selection if still valid
+    if (currentSelection !== 'all' && teams.includes(currentSelection)) {
+        teamFilterEl.value = currentSelection;
+    } else {
+        teamFilterEl.value = 'all';
+    }
+    
+    console.log(`Circle21: Populated team filter with ${teams.length} teams:`, teams);
 }
 
 // Save Circle21 athletes (updates both Firebase and localStorage)
@@ -477,6 +525,7 @@ function initializeCircle21Module() {
             displayCircle21AthletesList();
         }
         if (document.getElementById('circle21-leaderboard-display')) {
+            populateCircle21TeamFilter();
             displayCircle21Leaderboard();
         }
     }
