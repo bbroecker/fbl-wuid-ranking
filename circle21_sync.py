@@ -266,17 +266,43 @@ def find_athlete_data(athlete_name, gender, leaderboard_data, identifier=None):
     
     athlete_id = athlete_info['id']
     
-    # Get workout placements
+    # Get workout placements with detailed results
     workouts = {}
     for wod in leaderboard_data.get('wods', []):
         wod_name = wod['wod']['name']
         rank = calculate_workout_rank(athlete_id, wod)
-        workouts[wod_name] = rank
+        
+        # Extract detailed workout result
+        workout_result = None
+        if wod.get('workouts'):
+            workout_data = wod['workouts'][0]
+            results = workout_data.get('results', [])
+            for result in results:
+                if result.get('athlete_id') == athlete_id:
+                    workout_result = {
+                        'rank': rank,
+                        'time': result.get('time'),
+                        'reps': result.get('how_many'),
+                        'weight': result.get('weight'),
+                        'tiebreak': result.get('athlete_tie_break'),
+                        'score_text': result.get('score_text')  # Human-readable score
+                    }
+                    break
+        
+        # Store rank (for backwards compatibility) or detailed result
+        workouts[wod_name] = workout_result if workout_result else rank
     
     # Calculate overall rank using Circle21 rules:
     # Sum of BEST 4 workout placements (lower is better)
     # Athletes with < 4 workouts rank lower than those with 4+
-    completed_workouts = [r for r in workouts.values() if r is not None]
+    completed_workouts = []
+    for wod_name, wod_data in workouts.items():
+        if wod_data is not None:
+            # Handle both old format (just rank) and new format (dict with details)
+            rank = wod_data['rank'] if isinstance(wod_data, dict) else wod_data
+            if rank is not None:
+                completed_workouts.append(rank)
+    
     total_athletes = len(leaderboard_data.get('athletes', []))
     
     if len(completed_workouts) >= 4:

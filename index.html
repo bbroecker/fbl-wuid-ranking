@@ -702,6 +702,7 @@
             <button class="tab" onclick="showTab('workout')">Workout Rankings</button>
             <button class="tab" onclick="showTab('overall')">Overall Standings</button>
             <button class="tab" onclick="showTab('circle21')">Circle21 Leaderboard</button>
+            <button class="tab" onclick="showTab('circle21-workouts')">Circle21 Workouts</button>
         </div>
 
         <div class="content">
@@ -823,6 +824,35 @@
                 </div>
 
                 <div id="circle21-leaderboard-display"></div>
+            </div>
+
+            <div id="circle21-workouts-tab" class="tab-content" style="display: none;">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Filter by Gender</label>
+                        <select id="circle21WorkoutsGenderFilter" onchange="displayCircle21Workouts()">
+                            <option value="" selected disabled>-- Select Gender --</option>
+                            <option value="M">Male (M)</option>
+                            <option value="F">Female (F)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Filter by Team</label>
+                        <select id="circle21WorkoutsTeamFilter" onchange="displayCircle21Workouts()">
+                            <option value="all">All Athletes</option>
+                            <!-- Team options populated dynamically from Firebase -->
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Select Workout</label>
+                        <select id="circle21WorkoutSelect" onchange="displayCircle21Workouts()">
+                            <option value="" selected disabled>-- Select Workout --</option>
+                            <!-- Workout options populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+
+                <div id="circle21-workouts-display"></div>
             </div>
         </div>
         

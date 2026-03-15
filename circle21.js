@@ -69,6 +69,11 @@ function setupCircle21FirebaseListener() {
                     populateCircle21TeamFilter();
                     displayCircle21Leaderboard();
                 }
+                if (typeof displayCircle21Workouts === 'function') {
+                    populateCircle21WorkoutsTeamFilter();
+                    populateCircle21WorkoutSelect();
+                    displayCircle21Workouts();
+                }
                 
                 console.log(`Circle21: Loaded ${circle21AthleteCache.length} athletes from Firebase`);
             } else {
@@ -425,7 +430,12 @@ function displayCircle21Leaderboard() {
         let best4Workouts = new Set();
         if (workoutsCompleted >= 4) {
             const workoutsList = ['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6']
-                .map(wod => ({ wod, rank: workouts[wod] }))
+                .map(wod => {
+                    const wodData = workouts[wod];
+                    // Handle both old format (number) and new format (object)
+                    const rank = typeof wodData === 'object' ? wodData?.rank : wodData;
+                    return { wod, rank };
+                })
                 .filter(w => w.rank !== null && w.rank !== undefined);
             
             // Sort by rank (lower is better) and take top 4
@@ -440,7 +450,9 @@ function displayCircle21Leaderboard() {
         
         // Display workouts with blue highlighting for best 4
         ['LQ1', 'LQ2', 'LQ3', 'LQ4', 'LQ5', 'LQ6'].forEach(wod => {
-            const rank = workouts[wod];
+            const wodData = workouts[wod];
+            // Handle both old format (number) and new format (object)
+            const rank = typeof wodData === 'object' ? wodData?.rank : wodData;
             const isBest4 = best4Workouts.has(wod);
             const style = isBest4 ? 'font-weight: bold; color: #008AC2;' : '';
             const value = rank ? '#' + rank : '-';
@@ -489,8 +501,11 @@ function sortCircle21Athletes(athletes, column, ascending) {
             valB = b.workouts_completed || 0;
         } else {
             // Workout columns (LQ1-LQ6)
-            valA = a.workouts[column] || 999999;
-            valB = b.workouts[column] || 999999;
+            const wodDataA = a.workouts[column];
+            const wodDataB = b.workouts[column];
+            // Handle both old format (number) and new format (object)
+            valA = typeof wodDataA === 'object' ? (wodDataA?.rank || 999999) : (wodDataA || 999999);
+            valB = typeof wodDataB === 'object' ? (wodDataB?.rank || 999999) : (wodDataB || 999999);
         }
         
         return ascending ? valA - valB : valB - valA;
@@ -506,6 +521,181 @@ function sortCircle21(column) {
         circle21SortAscending = true;
     }
     displayCircle21Leaderboard();
+}
+
+// ====================================
+// Circle21 Workout Details Display
+// ====================================
+
+// Format time from milliseconds to MM:SS
+function formatWorkoutTime(milliseconds) {
+    if (!milliseconds) return '-';
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+// Display Circle21 workout results
+function displayCircle21Workouts() {
+    try {
+        const container = document.getElementById('circle21-workouts-display');
+        if (!container) {
+            console.log('Circle21 Workouts: Container not found');
+            return;
+        }
+        
+        const genderFilterEl = document.getElementById('circle21WorkoutsGenderFilter');
+        const teamFilterEl = document.getElementById('circle21WorkoutsTeamFilter');
+        const workoutSelectEl = document.getElementById('circle21WorkoutSelect');
+        
+        const genderFilter = genderFilterEl ? genderFilterEl.value : '';
+        const teamFilter = teamFilterEl ? teamFilterEl.value : 'all';
+        const selectedWorkout = workoutSelectEl ? workoutSelectEl.value : '';
+        
+        console.log('Circle21 Workouts: Gender:', genderFilter, 'Team:', teamFilter, 'Workout:', selectedWorkout);
+        
+        // Check if selections are complete
+        if (!genderFilter || genderFilter === '') {
+            container.innerHTML = '<p style="text-align: center; color: #999; padding: 80px 40px;">👆 Please select gender, team, and workout above</p>';
+            return;
+        }
+        
+        if (!selectedWorkout || selectedWorkout === '') {
+            container.innerHTML = '<p style="text-align: center; color: #999; padding: 80px 40px;">👆 Please select a workout to view results</p>';
+            return;
+        }
+        
+        // Get all athletes and filter
+        let athletes = getAllCircle21Athletes().filter(a => a.gender === genderFilter);
+        
+        if (teamFilter && teamFilter !== 'all') {
+            athletes = athletes.filter(a => a.team_name === teamFilter);
+        }
+        
+        console.log('Circle21 Workouts: Filtered athletes:', athletes.length);
+        
+        // Extract workout results for selected workout
+        const workoutResults = [];
+        athletes.forEach(athlete => {
+            const workouts = athlete.workouts || {};
+            const workoutData = workouts[selectedWorkout];
+            
+            if (workoutData) {
+                const result = typeof workoutData === 'object' ? workoutData : { rank: workoutData };
+                workoutResults.push({
+                    name: athlete.name,
+                    team: athlete.team_name || '-',
+                    rank: result.rank,
+                    time: result.time,
+                    reps: result.reps,
+                    weight: result.weight,
+                    tiebreak: result.tiebreak,
+                    score_text: result.score_text
+                });
+            }
+        });
+        
+        console.log('Circle21 Workouts: Results found:', workoutResults.length);
+        
+        if (workoutResults.length === 0) {
+            const genderName = genderFilter === 'M' ? 'male' : 'female';
+            const teamMsg = teamFilter !== 'all' ? ` from ${teamFilter}` : '';
+            container.innerHTML = `<p style="text-align: center; color: #999; padding: 80px 40px;">No ${genderName} athletes${teamMsg} have completed ${selectedWorkout}</p>`;
+            return;
+        }
+        
+        // Sort by rank
+        workoutResults.sort((a, b) => (a.rank || 9999) - (b.rank || 9999));
+        
+        // Build table
+        let html = `<div style="text-align: center; color: #999; font-size: 13px; margin-bottom: 15px; padding: 8px; background: #1a1a1a; border-radius: 4px;">
+            ${selectedWorkout} Results - ${workoutResults.length} athlete${workoutResults.length !== 1 ? 's' : ''}
+        </div>`;
+        
+        html += '<div class="table-container"><table>';
+        html += '<thead><tr>';
+        html += '<th>Rank</th>';
+        html += '<th>Name</th>';
+        html += '<th>Team</th>';
+        html += '<th>Time</th>';
+        html += '<th>Reps</th>';
+        html += '<th>Weight</th>';
+        html += '</tr></thead><tbody>';
+        
+        workoutResults.forEach(result => {
+            html += '<tr>';
+            html += `<td style="text-align: center; font-weight: bold;">#${result.rank || '-'}</td>`;
+            html += `<td>${result.name}</td>`;
+            html += `<td style="color: #999;">${result.team}</td>`;
+            html += `<td style="text-align: center;">${formatWorkoutTime(result.time)}</td>`;
+            html += `<td style="text-align: center;">${result.reps !== null && result.reps !== undefined ? result.reps : '-'}</td>`;
+            html += `<td style="text-align: center;">${result.weight !== null && result.weight !== undefined ? result.weight + ' lbs' : '-'}</td>`;
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Circle21 Workouts: Error displaying workouts:', error);
+        const container = document.getElementById('circle21-workouts-display');
+        if (container) {
+            container.innerHTML = `<p style="text-align: center; color: #f44336; padding: 40px;">Error loading workout data. Check console for details.</p>`;
+        }
+    }
+}
+
+// Populate workout select dropdown
+function populateCircle21WorkoutSelect() {
+    const workoutSelectEl = document.getElementById('circle21WorkoutSelect');
+    if (!workoutSelectEl) return;
+    
+    // Get unique workout names from athlete data
+    const allAthletes = getAllCircle21Athletes();
+    const workoutSet = new Set();
+    
+    allAthletes.forEach(athlete => {
+        if (athlete.workouts) {
+            Object.keys(athlete.workouts).forEach(wodName => {
+                workoutSet.add(wodName);
+            });
+        }
+    });
+    
+    const workouts = Array.from(workoutSet).sort();
+    
+    // Clear and populate
+    workoutSelectEl.innerHTML = '<option value="" selected disabled>-- Select Workout --</option>';
+    workouts.forEach(wod => {
+        const option = document.createElement('option');
+        option.value = wod;
+        option.textContent = wod;
+        workoutSelectEl.appendChild(option);
+    });
+    
+    console.log(`Circle21 Workouts: Populated workout select with ${workouts.length} workouts:`, workouts);
+}
+
+// Populate team filter for workouts tab
+function populateCircle21WorkoutsTeamFilter() {
+    const teamFilterEl = document.getElementById('circle21WorkoutsTeamFilter');
+    if (!teamFilterEl) return;
+    
+    // Get teams from metadata
+    let teams = [];
+    if (circle21Metadata && circle21Metadata.teams_tracked) {
+        teams = circle21Metadata.teams_tracked;
+    }
+    
+    // Clear and populate
+    teamFilterEl.innerHTML = '<option value="all">All Athletes</option>';
+    teams.forEach(teamName => {
+        const option = document.createElement('option');
+        option.value = teamName;
+        option.textContent = teamName;
+        teamFilterEl.appendChild(option);
+    });
 }
 
 // ====================================
@@ -535,6 +725,11 @@ function initializeCircle21Module() {
         if (document.getElementById('circle21-leaderboard-display')) {
             populateCircle21TeamFilter();
             displayCircle21Leaderboard();
+        }
+        if (document.getElementById('circle21-workouts-display')) {
+            populateCircle21WorkoutsTeamFilter();
+            populateCircle21WorkoutSelect();
+            displayCircle21Workouts();
         }
     }
     
