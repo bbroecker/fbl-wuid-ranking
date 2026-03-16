@@ -825,8 +825,12 @@ def sync_all_team_scores():
             sorted_r = sorted(results, key=lambda r: r.get('how_many') or 0, reverse=True)
         elif workout_type == 'amrap':
             sorted_r = sorted(results, key=lambda r: (-(r.get('how_many') or 0), r.get('athlete_tie_break') or 999999999))
-        else:  # fortime
-            sorted_r = sorted(results, key=lambda r: r.get('time') or 999999999)
+        else:  # fortime: lower time better; if capped (same time), more reps better; then tiebreak
+            sorted_r = sorted(results, key=lambda r: (
+                r.get('time') or 999999999,
+                -(r.get('how_many') or 0),
+                r.get('athlete_tie_break') or 999999999
+            ))
         return {r['athlete_id']: idx + 1 for idx, r in enumerate(sorted_r)}
     
     for wod_entry in male_data.get('wods', []):
