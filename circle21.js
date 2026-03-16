@@ -676,8 +676,8 @@ function displayCircle21Workouts() {
                             repsDisplay += ` (${tiebreakTime})`;
                         }
                     }
-                } else if (isForTime && workoutSpec.totalReps && result.time && result.time <= workoutSpec.timecap) {
-                    // Finished at or before time cap = completed all reps
+                } else if (isForTime && workoutSpec.totalReps && result.time && result.time <= workoutSpec.timecap && result.reps == null) {
+                    // Finished at or before time cap with no reps stored = completed all reps
                     repsDisplay = workoutSpec.totalReps;
                 }
                 html += `<td style="text-align: center;">${repsDisplay}</td>`;
