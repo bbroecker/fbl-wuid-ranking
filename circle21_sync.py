@@ -195,13 +195,19 @@ def calculate_workout_rank(athlete_id, wod_data):
             elif other_reps == athlete_reps and other_tiebreak < athlete_tiebreak:
                 rank += 1
     
-    else:  # fortime
-        # Lower time = better rank; if capped (same time), more reps wins; tiebreak last
-        athlete_time = athlete_result.get('time') or 999999999
+    else:  # fortime: lower time better; if capped (null time+reps), more reps better; then tiebreak
+        cap_time = max((r.get('time') for r in results if r.get('time')), default=999999999)
+        def resolve_time(result):
+            t = result.get('time')
+            reps = result.get('how_many') or 0
+            if t is None and reps > 0:
+                return cap_time
+            return t if t is not None else 999999999
+        athlete_time = resolve_time(athlete_result)
         athlete_reps = athlete_result.get('how_many') or 0
         athlete_tiebreak = athlete_result.get('athlete_tie_break') or 999999999
         for result in results:
-            other_time = result.get('time') or 999999999
+            other_time = resolve_time(result)
             other_reps = result.get('how_many') or 0
             other_tiebreak = result.get('athlete_tie_break') or 999999999
             if other_time < athlete_time:
@@ -825,12 +831,18 @@ def sync_all_team_scores():
             sorted_r = sorted(results, key=lambda r: r.get('how_many') or 0, reverse=True)
         elif workout_type == 'amrap':
             sorted_r = sorted(results, key=lambda r: (-(r.get('how_many') or 0), r.get('athlete_tie_break') or 999999999))
-        else:  # fortime: lower time better; if capped (same time), more reps better; then tiebreak
-            sorted_r = sorted(results, key=lambda r: (
-                r.get('time') or 999999999,
-                -(r.get('how_many') or 0),
-                r.get('athlete_tie_break') or 999999999
-            ))
+        else:  # fortime: lower time better; if capped (same time or null+reps), more reps better; then tiebreak
+            def fortime_key(r):
+                t = r.get('time')
+                reps = r.get('how_many') or 0
+                tiebreak = r.get('athlete_tie_break') or 999999999
+                # null time with reps = hit the cap (treat same as other capped athletes)
+                if t is None and reps > 0:
+                    t = 86400000  # capped: 24h sentinel, below DNF (999999999)
+                elif t is None:
+                    t = 999999999  # no result / DNF
+                return (t, -reps, tiebreak)
+            sorted_r = sorted(results, key=fortime_key)
         return {r['athlete_id']: idx + 1 for idx, r in enumerate(sorted_r)}
     
     for wod_entry in male_data.get('wods', []):
