@@ -530,9 +530,9 @@ function sortCircle21(column) {
 
 // Workout specifications (type and details)
 const WORKOUT_SPECS = {
-    'LQ1': { type: 'fortime', timecap: 1200000, totalReps: 150 }, // 20min cap, 150 reps total
+    'LQ1': { type: 'fortime', timecap: 1200000, totalReps: 172 }, // 20min cap, 172 reps total
     'LQ2': { type: 'maxweight', unit: 'kg' },
-    'LQ3': { type: 'fortime', timecap: 1200000, totalReps: 285 }, // 20min cap
+    'LQ3': { type: 'fortime', timecap: 1200000, totalReps: 300 }, // 20min cap
     'LQ4': { type: 'fortime', timecap: 720000, totalReps: 246 }, // 12min cap
     'LQ5': { type: 'fortime', timecap: 900000, totalReps: 132 }, // 15min cap, 132 reps total
     'LQ6': { type: 'fortime', timecap: 1200000, totalReps: null } // 20min cap
