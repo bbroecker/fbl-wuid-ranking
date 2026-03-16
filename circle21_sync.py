@@ -149,75 +149,19 @@ def fetch_circle21_team_leaderboard():
 
 
 def calculate_workout_rank(athlete_id, wod_data):
-    """Calculate an athlete's rank in a specific workout"""
+    """Look up athlete's rank using the position field pre-computed by Circle21.
+    Only returns a rank if the athlete actually submitted a result."""
     if not wod_data.get('workouts'):
         return None
-    
-    wod_name = wod_data.get('wod', {}).get('name', '')
-    workout_type = WORKOUT_TYPES.get(wod_name, 'fortime')
-    
     workout_data = wod_data['workouts'][0]
-    results = workout_data.get('results', [])
-    
-    # Find athlete's result
-    athlete_result = None
-    for result in results:
-        if result.get('athlete_id') == athlete_id:
-            athlete_result = result
-            break
-    
-    if not athlete_result:
+    # Only athletes who have a result entry actually competed
+    has_result = any(r.get('athlete_id') == athlete_id for r in workout_data.get('results', []))
+    if not has_result:
         return None
-    
-    rank = 1
-    
-    if workout_type == 'maxweight':
-        # Higher weight (how_many) = better rank
-        athlete_weight = athlete_result.get('how_many') or 0
-        for result in results:
-            if result.get('athlete_id') == athlete_id:
-                continue
-            other_weight = result.get('how_many') or 0
-            if other_weight > athlete_weight:
-                rank += 1
-    
-    elif workout_type == 'amrap':
-        # Higher reps (how_many) = better rank, lower tiebreak if tied
-        athlete_reps = athlete_result.get('how_many') or 0
-        athlete_tiebreak = athlete_result.get('athlete_tie_break') or 999999999
-        for result in results:
-            if result.get('athlete_id') == athlete_id:
-                continue
-            other_reps = result.get('how_many') or 0
-            other_tiebreak = result.get('athlete_tie_break') or 999999999
-            if other_reps > athlete_reps:
-                rank += 1
-            elif other_reps == athlete_reps and other_tiebreak < athlete_tiebreak:
-                rank += 1
-    
-    else:  # fortime: lower time better; if capped (null time+reps), more reps better; then tiebreak
-        cap_time = max((r.get('time') for r in results if r.get('time')), default=999999999)
-        def resolve_time(result):
-            t = result.get('time')
-            reps = result.get('how_many') or 0
-            if t is None and reps > 0:
-                return cap_time
-            return t if t is not None else 999999999
-        athlete_time = resolve_time(athlete_result)
-        athlete_reps = athlete_result.get('how_many') or 0
-        athlete_tiebreak = athlete_result.get('athlete_tie_break') or 999999999
-        for result in results:
-            other_time = resolve_time(result)
-            other_reps = result.get('how_many') or 0
-            other_tiebreak = result.get('athlete_tie_break') or 999999999
-            if other_time < athlete_time:
-                rank += 1
-            elif other_time == athlete_time and other_reps > athlete_reps:
-                rank += 1
-            elif other_time == athlete_time and other_reps == athlete_reps and other_tiebreak < athlete_tiebreak:
-                rank += 1
-    
-    return rank
+    for athlete in workout_data.get('athletes', []):
+        if athlete.get('id') == athlete_id:
+            return athlete.get('position')
+    return None
 
 
 def calculate_overall_rank(leaderboard_data, athlete_id, athlete_score):
@@ -825,37 +769,23 @@ def sync_all_team_scores():
     male_rank_maps = []
     female_rank_maps = []
     
-    def build_rank_map(results, wod_name):
-        workout_type = WORKOUT_TYPES.get(wod_name, 'fortime')
-        if workout_type == 'maxweight':
-            sorted_r = sorted(results, key=lambda r: r.get('how_many') or 0, reverse=True)
-        elif workout_type == 'amrap':
-            sorted_r = sorted(results, key=lambda r: (-(r.get('how_many') or 0), r.get('athlete_tie_break') or 999999999))
-        else:  # fortime: lower time better; if capped (same time or null+reps), more reps better; then tiebreak
-            def fortime_key(r):
-                t = r.get('time')
-                reps = r.get('how_many') or 0
-                tiebreak = r.get('athlete_tie_break') or 999999999
-                # null time with reps = hit the cap (treat same as other capped athletes)
-                if t is None and reps > 0:
-                    t = 86400000  # capped: 24h sentinel, below DNF (999999999)
-                elif t is None:
-                    t = 999999999  # no result / DNF
-                return (t, -reps, tiebreak)
-            sorted_r = sorted(results, key=fortime_key)
-        return {r['athlete_id']: idx + 1 for idx, r in enumerate(sorted_r)}
+    def build_rank_map(workout):
+        """Build {athlete_id: position} using Circle21's pre-computed positions,
+        only for athletes who actually submitted a result."""
+        results_ids = {r['athlete_id'] for r in workout.get('results', [])}
+        return {
+            a['id']: a['position']
+            for a in workout.get('athletes', [])
+            if a.get('position') is not None and a['id'] in results_ids
+        }
     
     for wod_entry in male_data.get('wods', []):
-        wod_name = wod_entry.get('wod', {}).get('name', '')
         workout = wod_entry['workouts'][0] if wod_entry.get('workouts') else {}
-        results = workout.get('results', [])
-        male_rank_maps.append(build_rank_map(results, wod_name))
+        male_rank_maps.append(build_rank_map(workout))
     
     for wod_entry in female_data.get('wods', []):
-        wod_name = wod_entry.get('wod', {}).get('name', '')
         workout = wod_entry['workouts'][0] if wod_entry.get('workouts') else {}
-        results = workout.get('results', [])
-        female_rank_maps.append(build_rank_map(results, wod_name))
+        female_rank_maps.append(build_rank_map(workout))
     
     print(f"  ✅ Rank maps built for {len(male_rank_maps)} male + {len(female_rank_maps)} female workouts")
     
@@ -876,8 +806,13 @@ def sync_all_team_scores():
             if 'firebase_workouts' in athlete:
                 fb_workouts = athlete['firebase_workouts']
                 for workout_name in workout_names:
-                    if workout_name in fb_workouts and 'rank' in fb_workouts[workout_name]:
-                        workouts[workout_name] = {'rank': fb_workouts[workout_name]['rank']}
+                    wod_val = fb_workouts.get(workout_name)
+                    if wod_val is None:
+                        continue
+                    if isinstance(wod_val, dict) and 'rank' in wod_val:
+                        workouts[workout_name] = {'rank': wod_val['rank']}
+                    elif isinstance(wod_val, int):
+                        workouts[workout_name] = {'rank': wod_val}
             else:
                 # Look up ranks from Circle21 API rank maps
                 athlete_id = athlete['id']
@@ -901,8 +836,13 @@ def sync_all_team_scores():
             if 'firebase_workouts' in athlete:
                 fb_workouts = athlete['firebase_workouts']
                 for workout_name in workout_names:
-                    if workout_name in fb_workouts and 'rank' in fb_workouts[workout_name]:
-                        workouts[workout_name] = {'rank': fb_workouts[workout_name]['rank']}
+                    wod_val = fb_workouts.get(workout_name)
+                    if wod_val is None:
+                        continue
+                    if isinstance(wod_val, dict) and 'rank' in wod_val:
+                        workouts[workout_name] = {'rank': wod_val['rank']}
+                    elif isinstance(wod_val, int):
+                        workouts[workout_name] = {'rank': wod_val}
             else:
                 # Look up ranks from Circle21 API rank maps
                 athlete_id = athlete['id']
