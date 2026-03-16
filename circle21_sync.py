@@ -13,6 +13,16 @@ from datetime import datetime
 # CONFIGURATION
 # ====================
 
+# Workout types for correct rank direction
+WORKOUT_TYPES = {
+    'LQ1': 'fortime',   # lower time = better
+    'LQ2': 'maxweight', # higher weight (how_many) = better
+    'LQ3': 'fortime',
+    'LQ4': 'fortime',
+    'LQ5': 'fortime',
+    'LQ6': 'fortime',   # lower time = better
+}
+
 # Teams to track - format: {"Team Name": "team_id"}
 TEAMS_TO_TRACK = {
     "CrossFit WUID 1": "ff20e796-8ad9-4ade-a371-c35e9960cc8c",
@@ -143,6 +153,9 @@ def calculate_workout_rank(athlete_id, wod_data):
     if not wod_data.get('workouts'):
         return None
     
+    wod_name = wod_data.get('wod', {}).get('name', '')
+    workout_type = WORKOUT_TYPES.get(wod_name, 'fortime')
+    
     workout_data = wod_data['workouts'][0]
     results = workout_data.get('results', [])
     
@@ -156,28 +169,47 @@ def calculate_workout_rank(athlete_id, wod_data):
     if not athlete_result:
         return None
     
-    # Calculate rank by counting better scores
-    # CrossFit scoring: lower time or higher reps if capped
-    athlete_time = athlete_result.get('time') or 999999999
-    athlete_reps = athlete_result.get('how_many') or 0
-    athlete_tiebreak = athlete_result.get('athlete_tie_break') or 999999999
-    
     rank = 1
-    for result in results:
-        other_time = result.get('time') or 999999999
-        other_reps = result.get('how_many') or 0
-        other_tiebreak = result.get('athlete_tie_break') or 999999999
-        
-        # Scoring logic with tiebreaker:
-        # 1. If different completion times, lower wins
-        # 2. If both capped (same time), more reps wins
-        # 3. If same reps, lower tiebreak time wins (reached that rep count faster)
-        if other_time < athlete_time:
-            rank += 1
-        elif other_time == athlete_time and other_reps > athlete_reps:
-            rank += 1
-        elif other_time == athlete_time and other_reps == athlete_reps and other_tiebreak < athlete_tiebreak:
-            rank += 1
+    
+    if workout_type == 'maxweight':
+        # Higher weight (how_many) = better rank
+        athlete_weight = athlete_result.get('how_many') or 0
+        for result in results:
+            if result.get('athlete_id') == athlete_id:
+                continue
+            other_weight = result.get('how_many') or 0
+            if other_weight > athlete_weight:
+                rank += 1
+    
+    elif workout_type == 'amrap':
+        # Higher reps (how_many) = better rank, lower tiebreak if tied
+        athlete_reps = athlete_result.get('how_many') or 0
+        athlete_tiebreak = athlete_result.get('athlete_tie_break') or 999999999
+        for result in results:
+            if result.get('athlete_id') == athlete_id:
+                continue
+            other_reps = result.get('how_many') or 0
+            other_tiebreak = result.get('athlete_tie_break') or 999999999
+            if other_reps > athlete_reps:
+                rank += 1
+            elif other_reps == athlete_reps and other_tiebreak < athlete_tiebreak:
+                rank += 1
+    
+    else:  # fortime
+        # Lower time = better rank; if capped (same time), more reps wins; tiebreak last
+        athlete_time = athlete_result.get('time') or 999999999
+        athlete_reps = athlete_result.get('how_many') or 0
+        athlete_tiebreak = athlete_result.get('athlete_tie_break') or 999999999
+        for result in results:
+            other_time = result.get('time') or 999999999
+            other_reps = result.get('how_many') or 0
+            other_tiebreak = result.get('athlete_tie_break') or 999999999
+            if other_time < athlete_time:
+                rank += 1
+            elif other_time == athlete_time and other_reps > athlete_reps:
+                rank += 1
+            elif other_time == athlete_time and other_reps == athlete_reps and other_tiebreak < athlete_tiebreak:
+                rank += 1
     
     return rank
 
@@ -787,19 +819,27 @@ def sync_all_team_scores():
     male_rank_maps = []
     female_rank_maps = []
     
+    def build_rank_map(results, wod_name):
+        workout_type = WORKOUT_TYPES.get(wod_name, 'fortime')
+        if workout_type == 'maxweight':
+            sorted_r = sorted(results, key=lambda r: r.get('how_many') or 0, reverse=True)
+        elif workout_type == 'amrap':
+            sorted_r = sorted(results, key=lambda r: (-(r.get('how_many') or 0), r.get('athlete_tie_break') or 999999999))
+        else:  # fortime
+            sorted_r = sorted(results, key=lambda r: r.get('time') or 999999999)
+        return {r['athlete_id']: idx + 1 for idx, r in enumerate(sorted_r)}
+    
     for wod_entry in male_data.get('wods', []):
+        wod_name = wod_entry.get('wod', {}).get('name', '')
         workout = wod_entry['workouts'][0] if wod_entry.get('workouts') else {}
         results = workout.get('results', [])
-        sorted_results = sorted(results, key=lambda r: r.get('time') or 999999999)
-        rank_map = {r['athlete_id']: idx + 1 for idx, r in enumerate(sorted_results)}
-        male_rank_maps.append(rank_map)
+        male_rank_maps.append(build_rank_map(results, wod_name))
     
     for wod_entry in female_data.get('wods', []):
+        wod_name = wod_entry.get('wod', {}).get('name', '')
         workout = wod_entry['workouts'][0] if wod_entry.get('workouts') else {}
         results = workout.get('results', [])
-        sorted_results = sorted(results, key=lambda r: r.get('time') or 999999999)
-        rank_map = {r['athlete_id']: idx + 1 for idx, r in enumerate(sorted_results)}
-        female_rank_maps.append(rank_map)
+        female_rank_maps.append(build_rank_map(results, wod_name))
     
     print(f"  ✅ Rank maps built for {len(male_rank_maps)} male + {len(female_rank_maps)} female workouts")
     

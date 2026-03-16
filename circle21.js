@@ -535,7 +535,7 @@ const WORKOUT_SPECS = {
     'LQ3': { type: 'fortime', timecap: 1200000, totalReps: 285 }, // 20min cap
     'LQ4': { type: 'fortime', timecap: 720000, totalReps: 246 }, // 12min cap
     'LQ5': { type: 'fortime', timecap: 900000, totalReps: 132 }, // 15min cap, 132 reps total
-    'LQ6': { type: 'amrap', timecap: 1200000, totalReps: null } // AMRAP - reps matter, show tiebreak
+    'LQ6': { type: 'fortime', timecap: 1200000, totalReps: null } // 20min cap
 };
 
 // Format time from milliseconds to MM:SS
