@@ -1785,6 +1785,17 @@ function displayTeamBreakdown() {
             males: new Set(best3Males.map(a => a.name))
         };
     });
+
+    // Top 3 per gender per workout for highlighting (all athletes, regardless of validity)
+    const workoutTopAthletes = {};
+    workoutNames.forEach(wod => {
+        const allF = processedFemales.filter(a => a.valid && a.workouts[wod]).sort((a, b) => a.workouts[wod] - b.workouts[wod]);
+        const allM = processedMales.filter(a => a.valid && a.workouts[wod]).sort((a, b) => a.workouts[wod] - b.workouts[wod]);
+        workoutTopAthletes[wod] = {
+            females: new Set(allF.slice(0, 3).map(a => a.name)),
+            males: new Set(allM.slice(0, 3).map(a => a.name))
+        };
+    });
     
     // Find best 4 valid workouts for team total
     const validWorkoutScores = [];
@@ -1828,7 +1839,15 @@ function displayTeamBreakdown() {
     
     // Female athletes first
     if (processedFemales.length > 0) {
-        html += '<tr><td colspan="10" style="background: #1a1a1a; font-weight: bold; padding: 8px; font-size: 13px;">FEMALE ATHLETES</td></tr>';
+        html += '<tr>';
+        html += '<td colspan="2" style="background: #1a1a1a; font-weight: bold; padding: 8px; font-size: 13px;">FEMALE ATHLETES</td>';
+        workoutNames.forEach(wod => {
+            const isValid = workoutValidity[wod];
+            const borderStyle = isValid ? '' : 'border-left: 2px solid #ff6b6b; border-right: 2px solid #ff6b6b;';
+            html += `<td style="background: #1a1a1a; ${borderStyle}"></td>`;
+        });
+        html += '<td colspan="2" style="background: #1a1a1a;"></td>';
+        html += '</tr>';
         
         processedFemales.forEach(athlete => {
             const rowBorder = athlete.valid ? '' : 'border-top: 2px solid #ff6b6b; border-bottom: 2px solid #ff6b6b;';
@@ -1846,28 +1865,17 @@ function displayTeamBreakdown() {
             workoutNames.forEach(wod => {
                 const rank = athlete.workouts[wod];
                 const isWorkoutValid = workoutValidity[wod];
-                const isContributor = athlete.valid && workoutContributors[wod]?.females.has(athlete.name);
-                const isSelectedWorkout = best4Workouts.has(wod);
                 const columnBorder = isWorkoutValid ? '' : 'border-left: 2px solid #ff6b6b; border-right: 2px solid #ff6b6b;';
-                
-                // Blue font + bold if this athlete contributes to a selected workout
-                const shouldHighlight = isContributor && isSelectedWorkout && isWorkoutValid;
+                const shouldHighlight = workoutTopAthletes[wod]?.females.has(athlete.name);
                 
                 if (!rank) {
-                    html += `<td style="opacity: 0.4; ${columnBorder}">DNF</td>`;
+                    const needsResult = !athlete.valid || !isWorkoutValid;
+                    const emptyStyle = needsResult ? `color: #ff6b6b; font-weight: bold; font-size: 1.2em; ${columnBorder}` : `opacity: 0.4; ${columnBorder}`;
+                    html += `<td style="${emptyStyle}">-</td>`;
                 } else {
                     let cellStyle = columnBorder;
-                    let cellTitle = '';
-                    
-                    if (shouldHighlight) {
-                        cellStyle += ' color: #008AC2; font-weight: bold;';
-                        cellTitle = 'Contributes to team total (best 3 in selected workout)';
-                    } else {
-                        cellStyle += ' opacity: 0.5;';
-                        cellTitle = 'Does not count toward team total';
-                    }
-                    
-                    html += `<td style="${cellStyle}" title="${cellTitle}">#${rank}</td>`;
+                    if (shouldHighlight) cellStyle += ' color: #008AC2; font-weight: bold;';
+                    html += `<td style="${cellStyle}">#${rank}</td>`;
                 }
             });
             
@@ -1875,11 +1883,31 @@ function displayTeamBreakdown() {
             html += `<td>${athlete.completed}/6</td>`;
             html += '</tr>';
         });
+        
+        // Required Scores row for females
+        html += '<tr style="background: #1e1e1e;">';
+        html += '<td colspan="2" style="opacity: 0.7; padding-left: 8px; font-size: 13px; font-style: italic;">Required Scores</td>';
+        workoutNames.forEach(wod => {
+            const isValid = workoutValidity[wod];
+            const columnBorder = isValid ? '' : 'border-left: 2px solid #ff6b6b; border-right: 2px solid #ff6b6b;';
+            const count = processedFemales.filter(a => a.valid && a.workouts[wod]).length;
+            const color = count >= 3 ? '#4CAF50' : '#ff6b6b';
+            html += `<td style="color: ${color}; font-weight: bold; ${columnBorder}">${count}/3</td>`;
+        });
+        html += '<td colspan="2"></td>';
+        html += '</tr>';
     }
     
-    // Male athletes
     if (processedMales.length > 0) {
-        html += '<tr><td colspan="10" style="background: #1a1a1a; font-weight: bold; padding: 8px; font-size: 13px;">MALE ATHLETES</td></tr>';
+        html += '<tr>';
+        html += '<td colspan="2" style="background: #1a1a1a; font-weight: bold; padding: 8px; font-size: 13px;">MALE ATHLETES</td>';
+        workoutNames.forEach(wod => {
+            const isValid = workoutValidity[wod];
+            const borderStyle = isValid ? '' : 'border-left: 2px solid #ff6b6b; border-right: 2px solid #ff6b6b;';
+            html += `<td style="background: #1a1a1a; ${borderStyle}"></td>`;
+        });
+        html += '<td colspan="2" style="background: #1a1a1a;"></td>';
+        html += '</tr>';
         
         processedMales.forEach(athlete => {
             const rowBorder = athlete.valid ? '' : 'border-top: 2px solid #ff6b6b; border-bottom: 2px solid #ff6b6b;';
@@ -1897,28 +1925,17 @@ function displayTeamBreakdown() {
             workoutNames.forEach(wod => {
                 const rank = athlete.workouts[wod];
                 const isWorkoutValid = workoutValidity[wod];
-                const isContributor = athlete.valid && workoutContributors[wod]?.males.has(athlete.name);
-                const isSelectedWorkout = best4Workouts.has(wod);
                 const columnBorder = isWorkoutValid ? '' : 'border-left: 2px solid #ff6b6b; border-right: 2px solid #ff6b6b;';
-                
-                // Blue font + bold if this athlete contributes to a selected workout
-                const shouldHighlight = isContributor && isSelectedWorkout && isWorkoutValid;
+                const shouldHighlight = workoutTopAthletes[wod]?.males.has(athlete.name);
                 
                 if (!rank) {
-                    html += `<td style="opacity: 0.4; ${columnBorder}">DNF</td>`;
+                    const needsResult = !athlete.valid || !isWorkoutValid;
+                    const emptyStyle = needsResult ? `color: #ff6b6b; font-weight: bold; font-size: 1.2em; ${columnBorder}` : `opacity: 0.4; ${columnBorder}`;
+                    html += `<td style="${emptyStyle}">-</td>`;
                 } else {
                     let cellStyle = columnBorder;
-                    let cellTitle = '';
-                    
-                    if (shouldHighlight) {
-                        cellStyle += ' color: #008AC2; font-weight: bold;';
-                        cellTitle = 'Contributes to team total (best 3 in selected workout)';
-                    } else {
-                        cellStyle += ' opacity: 0.5;';
-                        cellTitle = 'Does not count toward team total';
-                    }
-                    
-                    html += `<td style="${cellStyle}" title="${cellTitle}">#${rank}</td>`;
+                    if (shouldHighlight) cellStyle += ' color: #008AC2; font-weight: bold;';
+                    html += `<td style="${cellStyle}">#${rank}</td>`;
                 }
             });
             
@@ -1926,6 +1943,19 @@ function displayTeamBreakdown() {
             html += `<td>${athlete.completed}/6</td>`;
             html += '</tr>';
         });
+        
+        // Required Scores row for males
+        html += '<tr style="background: #1e1e1e;">';
+        html += '<td colspan="2" style="opacity: 0.7; padding-left: 8px; font-size: 13px; font-style: italic;">Required Scores</td>';
+        workoutNames.forEach(wod => {
+            const isValid = workoutValidity[wod];
+            const columnBorder = isValid ? '' : 'border-left: 2px solid #ff6b6b; border-right: 2px solid #ff6b6b;';
+            const count = processedMales.filter(a => a.valid && a.workouts[wod]).length;
+            const color = count >= 3 ? '#4CAF50' : '#ff6b6b';
+            html += `<td style="color: ${color}; font-weight: bold; ${columnBorder}">${count}/3</td>`;
+        });
+        html += '<td colspan="2"></td>';
+        html += '</tr>';
     }
     
     // Workout Score Row
@@ -1995,9 +2025,9 @@ function displayTeamBreakdown() {
     
     html += '<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333; font-size: 12px; opacity: 0.8;">';
     html += '<p><strong>Legend:</strong></p>';
-    html += '<p><span style="color: #008AC2; font-weight: bold;">#rank</span> = Contributes to team total (best 3 from each gender in best 4 workouts)</p>';
-    html += '<p>Faded #rank = Does not count toward team total</p>';
-    html += '<p>DNF = Did not finish / No result</p>';
+    html += '<p><span style="color: #008AC2; font-weight: bold;">#rank</span> = Top 3 for this workout per gender (highlighted regardless of workout validity)</p>';
+    html += '<p><span style="color: #ff6b6b;">-</span> = Missing result where needed (invalid athlete or invalid workout column)</p>';
+    html += '<p>- = No result submitted</p>';
     html += '<p>✓ COUNTS = Athlete completed 4+ workouts, eligible to contribute to team</p>';
     html += '<p>✗ INVALID = Athlete completed &lt;4 workouts, cannot contribute to team</p>';
     html += '<p><strong>Workout Score:</strong> Sum of best 3 female ranks + best 3 male ranks</p>';
